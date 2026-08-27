@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>zcode-computer-use — computer control for AI coding agents</title>
 <meta name="description" content="A single-file, stdlib-only MCP server that gives AI agents eyes and hands on macOS: per-window screenshots, an indexed accessibility tree with diff markers, element-first actions, verified text selection, and 4-way scroll.">
+<meta property="og:title" content="zcode-computer-use — computer control for AI coding agents">
+<meta property="og:description" content="One stdlib-only Python file: per-window screenshots, an indexed AX tree with diff markers, element-first actions, verified text selection, 4-way verified scroll.">
+<meta property="og:image" content="https://sainzs.github.io/zcode-computer-use/assets/banner.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0c10'/%3E%3Ctext x='32' y='44' font-family='monospace' font-size='34' font-weight='700' fill='%2300ffb2' text-anchor='middle'%3E%5B%5D%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -113,6 +118,7 @@
   .rail-label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; }
   .rail-label em { display: block; color: var(--mint); font-style: normal; margin-bottom: 8px; }
   h2 { font-size: 22px; font-weight: 600; letter-spacing: -.015em; margin-bottom: 30px; }
+  .content { min-width: 0; }
   .content > :last-child { margin-bottom: 0; }
 
   /* loop spec rows */
@@ -127,7 +133,10 @@
 
   /* ---------- trace ribbon ---------- */
   .ribbon-cap { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; margin-bottom: 14px; }
-  .ribbon { display: flex; align-items: flex-end; gap: 3px; height: 84px; padding: 18px 16px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-sunken); overflow-x: auto; position: relative; }
+  .ribbon-scroll { min-width: 0; overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-sunken); }
+  .ribbon { display: flex; align-items: flex-end; gap: 3px; height: 84px; padding: 18px 16px 0; position: relative; min-width: max-content; }
+  .phase-row { position: relative; height: 20px; margin-top: 10px; }
+  .phase-row span { position: absolute; top: 0; white-space: nowrap; }
   .card { width: 13px; border-radius: 2px 2px 0 0; flex: none; opacity: 0; transform: translateY(10px); transition: opacity .4s ease, transform .4s ease; }
   .card.on { opacity: 1; transform: none; }
   .card.observe { background: var(--mint); height: 58px; }
@@ -141,8 +150,7 @@
     font-family: var(--mono); font-size: 11px; color: var(--mint);
     border: 1px solid var(--mint-dim); border-radius: 4px; padding: 5px 9px; white-space: nowrap;
   }
-  .phase-row { display: flex; gap: 3px; margin-top: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; white-space: nowrap; overflow: hidden; }
-  .phase-row span { text-align: center; flex: none; }
+  .phase-row, .phase-row span { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; }
   .legend { display: flex; flex-wrap: wrap; gap: 14px 18px; margin-top: 18px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
   .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; font-style: normal; }
   .figcap { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; margin-top: 16px; line-height: 1.9; }
@@ -196,7 +204,7 @@
   .cat-tool { font-weight: 500; color: var(--fg); }
   .cat-tool .chip { display: inline-block; margin-left: 8px; font-size: 9.5px; letter-spacing: .08em; background: #f0f3f6; color: #0b0d10; border-radius: 3px; padding: 1.5px 5px; vertical-align: 1px; font-weight: 500; }
   .cat-kind { color: var(--mint); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-  .cat-sig { color: var(--dim); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-sig { color: var(--dim); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .cov { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; }
   .cov .bar { height: 4px; background: var(--line-soft); border-radius: 2px; overflow: hidden; }
   .cov .bar i { display: block; height: 100%; background: var(--mint); border-radius: 2px; }
@@ -214,13 +222,22 @@
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
 
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .card { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
   @media (max-width: 860px) {
+    .nav { flex-wrap: wrap; gap: 8px 0; }
+    .nav .links { flex-wrap: wrap; row-gap: 6px; gap: 18px; }
     .hero { grid-template-columns: 1fr; gap: 36px; }
     .meta { border-left: none; padding-left: 0; border-top: 1px solid var(--line); }
     .stats { grid-template-columns: 1fr 1fr; }
     .stat:nth-child(3) { border-left: none; }
     .stat { border-bottom: 1px solid var(--line-soft); }
+    .stat:nth-child(3), .stat:nth-child(4) { border-bottom: none; }
     .demo-grid, .spec, .refuses { grid-template-columns: 1fr; }
+    .catalog-frame { overflow-x: auto; }
+    .catalog { min-width: 560px; }
     .spec .col + .col { border-left: none; border-top: 1px solid var(--line); padding: 24px 0 0; }
     .rail { grid-template-columns: 1fr; gap: 20px; }
     .cmp .row { grid-template-columns: 1fr; gap: 4px; }
@@ -306,8 +323,10 @@
     <div class="rail-label"><em>01</em>traced</div>
     <div class="content">
       <div class="ribbon-cap">the E2E suite, every call in order — textedit run</div>
-      <div class="ribbon" id="ribbon"></div>
-      <div class="phase-row" id="phases"></div>
+      <div class="ribbon-scroll">
+        <div class="ribbon" id="ribbon"></div>
+        <div class="phase-row" id="phases"></div>
+      </div>
       <div class="legend">
         <span><i style="background:var(--mint)"></i>observe</span>
         <span><i style="background:var(--blue)"></i>act</span>
@@ -489,22 +508,26 @@ not by brittle index</div>
     ribbon.appendChild(el);
     phaseEls.push(el);
   });
-  PHASES.slice().reverse().forEach(([idx, label]) => {
+  PHASES.slice().reverse().forEach(([idx]) => {
     const g = document.createElement("div");
-    g.className = "gap"; g.dataset.idx = idx;
+    g.className = "gap";
     ribbon.insertBefore(g, phaseEls[idx]);
   });
   const sigma = document.createElement("div");
   sigma.className = "sigma"; sigma.textContent = "Σ 24 calls";
   ribbon.appendChild(sigma);
-  PHASES.forEach(([idx, label], pi) => {
-    const next = PHASES[pi + 1] ? PHASES[pi + 1][0] : TRACE.length;
+  PHASES.forEach(([, label]) => {
     const span = document.createElement("span");
-    const width = (next - idx) * 16 + Math.max(0, PHASES.length - pi - 1) * 14 + 14;
-    if (pi === PHASES.length - 1) { span.style.width = "auto"; span.style.flex = "1"; span.style.textAlign = "left"; }
-    else span.style.width = width + "px";
     span.textContent = label;
     phases.appendChild(span);
+  });
+  // align labels to the measured gap positions — no width math, exact at any width
+  requestAnimationFrame(() => {
+    const gaps = [...ribbon.querySelectorAll(".gap")];
+    phases.style.minWidth = ribbon.scrollWidth + "px";
+    [...phases.children].forEach((span, pi) => {
+      span.style.left = gaps[pi].offsetLeft + "px";
+    });
   });
 
   // entrance animations
