@@ -11,16 +11,23 @@
 <style>
   :root {
     --bg: #0a0c10;
+    --bg-sunken: #07090c;
     --raise: #0d1015;
     --line: #1c2129;
     --line-soft: #161a21;
+    --line-strong: #2b333d;
     --fg: #f0f3f6;
     --muted: #8b95a0;
     --dim: #5a636d;
     --mint: #00ffb2;
     --mint-dim: rgba(0, 255, 178, .3);
+    --blue: #58a6ff;
+    --purple: #a78bfa;
+    --amber: #f5b83d;
+    --red: #f16a5c;
     --sans: "Geist", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
     --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --dither: conic-gradient(rgba(255,255,255,.035) 90deg, transparent 90deg 180deg, rgba(255,255,255,.035) 180deg 270deg, transparent 270deg);
   }
   * { box-sizing: border-box; margin: 0; }
   html { scroll-behavior: smooth; }
@@ -35,6 +42,14 @@
   a { color: inherit; text-decoration: none; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
 
+  /* ruler-tick divider */
+  .ruler { height: 9px; border-top: 1px solid var(--line-soft); position: relative; }
+  .ruler::after {
+    content: ""; position: absolute; inset: 0 0 auto; height: 100%;
+    background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 76px);
+    background-size: 76px 5px; background-repeat: repeat-x;
+  }
+
   /* ---------- nav ---------- */
   header { border-bottom: 1px solid var(--line-soft); }
   .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
@@ -44,7 +59,7 @@
   .nav .links a:hover { color: var(--fg); }
 
   /* ---------- hero ---------- */
-  .hero { display: grid; grid-template-columns: 1fr 218px; gap: 56px; padding: 96px 0 72px; align-items: end; }
+  .hero { display: grid; grid-template-columns: 1fr 218px; gap: 56px; padding: 92px 0 64px; align-items: end; }
   .kick { font-family: var(--mono); font-size: 11.5px; letter-spacing: .24em; color: var(--dim); text-transform: uppercase; margin-bottom: 26px; }
   .kick em { color: var(--mint); font-style: normal; padding: 0 8px; }
   h1 { font-size: clamp(42px, 6.4vw, 76px); font-weight: 600; letter-spacing: -.035em; line-height: 1.02; margin-bottom: 26px; }
@@ -62,10 +77,18 @@
   .btn:hover { border-color: var(--mint-dim); }
   .btn.primary { background: #f0f3f6; color: #0b0d10; border-color: #f0f3f6; font-weight: 600; }
   .btn.primary:hover { border-color: #fff; }
-  .meta { border-left: 1px solid var(--line); padding-left: 26px; display: flex; flex-direction: column; gap: 0; align-self: stretch; justify-content: flex-end; }
+  .meta { border-left: 1px solid var(--line); padding-left: 26px; display: flex; flex-direction: column; align-self: stretch; justify-content: flex-end; }
   .meta div { padding: 13px 0; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: 12px; color: var(--dim); letter-spacing: .08em; display: flex; justify-content: space-between; }
   .meta div:last-child { border-bottom: none; }
   .meta b { color: var(--fg); font-weight: 500; }
+
+  /* ---------- stat row ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 64px; }
+  .stat { padding: 26px 28px; }
+  .stat + .stat { border-left: 1px solid var(--line-soft); }
+  .stat .n { font-family: var(--mono); font-size: clamp(30px, 4vw, 44px); font-weight: 500; letter-spacing: -.02em; line-height: 1; }
+  .stat .n small { font-size: .55em; color: var(--muted); font-weight: 400; }
+  .stat .l { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; margin-top: 12px; }
 
   /* ---------- selection-marquee ---------- */
   .marquee { position: relative; border: 1px dashed rgba(0, 255, 178, .28); border-radius: 6px; padding: 22px; margin: 0 0 96px; }
@@ -84,7 +107,8 @@
   .demo-grid figcaption em { color: var(--mint); font-style: normal; padding-right: 8px; }
 
   /* ---------- left-rail sections ---------- */
-  section { border-top: 1px solid var(--line-soft); padding: 84px 0; }
+  section { padding: 84px 0; }
+  section + section { border-top: 1px solid var(--line-soft); }
   .rail { display: grid; grid-template-columns: 172px 1fr; gap: 44px; }
   .rail-label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; }
   .rail-label em { display: block; color: var(--mint); font-style: normal; margin-bottom: 8px; }
@@ -100,6 +124,31 @@
   .spec .cmd { font-family: var(--mono); font-size: 14px; font-weight: 500; margin-bottom: 12px; }
   .spec .cmd em { color: var(--mint); font-style: normal; }
   .spec .out { font-family: var(--mono); font-size: 12.3px; line-height: 1.85; color: var(--muted); white-space: pre-wrap; }
+
+  /* ---------- trace ribbon ---------- */
+  .ribbon-cap { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; margin-bottom: 14px; }
+  .ribbon { display: flex; align-items: flex-end; gap: 3px; height: 84px; padding: 18px 16px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-sunken); overflow-x: auto; position: relative; }
+  .card { width: 13px; border-radius: 2px 2px 0 0; flex: none; opacity: 0; transform: translateY(10px); transition: opacity .4s ease, transform .4s ease; }
+  .card.on { opacity: 1; transform: none; }
+  .card.observe { background: var(--mint); height: 58px; }
+  .card.act { background: var(--blue); height: 48px; }
+  .card.verify { background: #3a424d; height: 40px; }
+  .card.guard { background: var(--amber); height: 64px; }
+  .card.error { background: var(--red); height: 70px; box-shadow: 0 0 14px rgba(241, 106, 92, .35); }
+  .gap { width: 14px; flex: none; }
+  .sigma {
+    margin-left: 12px; align-self: center; flex: none;
+    font-family: var(--mono); font-size: 11px; color: var(--mint);
+    border: 1px solid var(--mint-dim); border-radius: 4px; padding: 5px 9px; white-space: nowrap;
+  }
+  .phase-row { display: flex; gap: 3px; margin-top: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+  .phase-row span { text-align: center; flex: none; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px 18px; margin-top: 18px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; font-style: normal; }
+  .figcap { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; margin-top: 16px; line-height: 1.9; }
+
+  /* dither band */
+  .dither { height: 26px; border: 1px solid var(--line); border-radius: 6px; background: var(--dither); background-size: 8px 8px; margin-top: 26px; }
 
   /* code */
   pre.block {
@@ -152,6 +201,9 @@
   @media (max-width: 860px) {
     .hero { grid-template-columns: 1fr; gap: 36px; }
     .meta { border-left: none; padding-left: 0; border-top: 1px solid var(--line); }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat:nth-child(3) { border-left: none; }
+    .stat { border-bottom: 1px solid var(--line-soft); }
     .demo-grid, .spec, .refuses { grid-template-columns: 1fr; }
     .spec .col + .col { border-left: none; border-top: 1px solid var(--line); padding: 24px 0 0; }
     .rail { grid-template-columns: 1fr; gap: 20px; }
@@ -166,6 +218,7 @@
   <div class="wrap nav">
     <a class="wordmark" href="#"><span>[</span> zcode-computer-use <span>]</span></a>
     <div class="links">
+      <a href="#traced">traced</a>
       <a href="#install">install</a>
       <a href="#why">why</a>
       <a href="#refuses">refuses</a>
@@ -198,6 +251,13 @@
     </div>
   </div>
 
+  <div class="stats">
+    <div class="stat"><div class="n"><span data-count="22">0</span></div><div class="l">live E2E checks</div></div>
+    <div class="stat"><div class="n"><span data-count="21">0</span></div><div class="l">protocol tests</div></div>
+    <div class="stat"><div class="n"><span data-count="0">0</span></div><div class="l">pip dependencies</div></div>
+    <div class="stat"><div class="n"><span data-count="3270">0</span><small> px</small></div><div class="l">verified scroll travel</div></div>
+  </div>
+
   <div class="marquee">
     <span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span>
     <span class="mlabel">axwindow — observed</span>
@@ -222,9 +282,32 @@
   </div>
 </div>
 
+<div class="wrap"><div class="ruler"></div></div>
+
+<section id="traced">
+  <div class="wrap rail">
+    <div class="rail-label"><em>01</em>traced</div>
+    <div class="content">
+      <div class="ribbon-cap">the E2E suite, every call in order — textedit run</div>
+      <div class="ribbon" id="ribbon"></div>
+      <div class="phase-row" id="phases"></div>
+      <div class="legend">
+        <span><i style="background:var(--mint)"></i>observe</span>
+        <span><i style="background:var(--blue)"></i>act</span>
+        <span><i style="background:#3a424d"></i>verify</span>
+        <span><i style="background:var(--amber)"></i>guard</span>
+        <span><i style="background:var(--red)"></i>error</span>
+      </div>
+      <div class="figcap">24 protocol calls · 1 deliberate stale-guard error (a feature, hit on purpose)
+      · ¶ every card is a real JSON-RPC call from tests/e2e_textedit.py</div>
+      <div class="dither"></div>
+    </div>
+  </div>
+</section>
+
 <section>
   <div class="wrap rail">
-    <div class="rail-label"><em>01</em>the loop</div>
+    <div class="rail-label"><em>02</em>the loop</div>
     <div class="content">
       <div class="spec">
         <div class="col">
@@ -255,7 +338,7 @@ not by brittle index</div>
 
 <section id="install">
   <div class="wrap rail">
-    <div class="rail-label"><em>02</em>install</div>
+    <div class="rail-label"><em>03</em>install</div>
     <div class="content">
       <pre class="block" id="mcp-json">{
   "mcpServers": {
@@ -274,7 +357,7 @@ not by brittle index</div>
 
 <section id="why">
   <div class="wrap rail">
-    <div class="rail-label"><em>03</em>why</div>
+    <div class="rail-label"><em>04</em>why</div>
     <div class="content">
       <div class="cmp">
         <div class="row head"><span></span><span>zcode-computer-use</span><span>typical alternative</span></div>
@@ -295,7 +378,7 @@ not by brittle index</div>
 
 <section id="refuses">
   <div class="wrap rail">
-    <div class="rail-label"><em>04</em>refuses</div>
+    <div class="rail-label"><em>05</em>refuses</div>
     <div class="content">
       <div class="refuses">
         <div class="item"><span class="x">×</span><div><div class="t">steal focus to observe</div><div class="d">activate:false reads background windows without raising them.</div></div></div>
@@ -311,7 +394,7 @@ not by brittle index</div>
 
 <section id="faq">
   <div class="wrap rail">
-    <div class="rail-label"><em>05</em>faq</div>
+    <div class="rail-label"><em>06</em>faq</div>
     <div class="content faq">
       <div class="qa"><div class="q">Why does my scroll do nothing?</div><div class="a">macOS silently drops wheel events posted to the HID event tap — the route most
       tutorials use. This server posts pixel-unit events to the session tap via Apple's bundled Python (pyobjc). Documented in code, proven in tests.</div></div>
@@ -337,6 +420,72 @@ not by brittle index</div>
 <div id="toast">MCP config copied</div>
 
 <script>
+  // trace ribbon: the real E2E sequence (tests/e2e_textedit.py), in order
+  const TRACE = [
+    ["observe"],["verify"],["verify"],["verify"],
+    ["observe"],["observe"],
+    ["act"],["act","type · paste"],["act","type · keys"],
+    ["observe"],["verify"],["verify"],
+    ["observe"],["verify"],
+    ["act","select + verify"],["verify"],
+    ["error","stale guard fires — by design"],
+    ["observe"],["verify"],["verify"],["verify"],
+    ["act","list_windows"],["observe"],
+    ["guard","no silent launch"]
+  ];
+  const PHASES = [[0,"boot + observe"],[5,"converge"],[6,"type"],[13,"select"],[16,"guard"],[17,"background"],[22,"targeting"]];
+  const ribbon = document.getElementById("ribbon");
+  const phases = document.getElementById("phases");
+  let phaseEls = [];
+  TRACE.forEach((c, i) => {
+    const el = document.createElement("div");
+    el.className = "card " + c[0];
+    el.title = c[1] || c[0];
+    ribbon.appendChild(el);
+    phaseEls.push(el);
+  });
+  PHASES.slice().reverse().forEach(([idx, label]) => {
+    const g = document.createElement("div");
+    g.className = "gap"; g.dataset.idx = idx;
+    ribbon.insertBefore(g, phaseEls[idx]);
+  });
+  const sigma = document.createElement("div");
+  sigma.className = "sigma"; sigma.textContent = "Σ 24 calls";
+  ribbon.appendChild(sigma);
+  PHASES.forEach(([idx, label], pi) => {
+    const next = PHASES[pi + 1] ? PHASES[pi + 1][0] : TRACE.length;
+    const span = document.createElement("span");
+    const width = (next - idx) * 16 + Math.max(0, PHASES.length - pi - 1) * 14 + 14;
+    if (pi === PHASES.length - 1) { span.style.width = "auto"; span.style.flex = "1"; span.style.textAlign = "left"; }
+    else span.style.width = width + "px";
+    span.textContent = label;
+    phases.appendChild(span);
+  });
+
+  // entrance animations
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      io.unobserve(en.target);
+      if (en.target.id === "ribbon") {
+        const cards = ribbon.querySelectorAll(".card");
+        cards.forEach((c, i) => setTimeout(() => c.classList.add("on"), i * 42));
+      }
+      if (en.target.classList.contains("stats")) {
+        en.target.querySelectorAll("[data-count]").forEach((el) => {
+          const target = +el.dataset.count, t0 = performance.now(), dur = 1100;
+          const tick = (t) => {
+            const p = Math.min(1, (t - t0) / dur), eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased).toLocaleString("en-US");
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+    });
+  }, { threshold: .3 });
+  document.querySelectorAll("#ribbon, .stats").forEach((el) => io.observe(el));
+
   const JSON_TEXT = document.getElementById("mcp-json").innerText;
   function toast(msg) {
     const t = document.getElementById("toast");
