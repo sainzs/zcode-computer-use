@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>zcode-computer-use — computer control for AI coding agents</title>
+<meta name="description" content="A single-file, stdlib-only MCP server that gives AI agents eyes and hands on macOS: per-window screenshots, an indexed accessibility tree with diff markers, element-first actions, verified text selection, and 4-way scroll.">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --fg: #e6edf3; --muted: #8b949e; --accent: #3fb950; --accent2: #58a6ff;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  header { border-bottom: 1px solid var(--border); }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; }
+  .nav .name { font-family: var(--mono); font-weight: 700; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0 8px; }
+  .badges img { height: 20px; }
+  h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; letter-spacing: -0.02em; margin: 12px 0 16px; }
+  h1 .hl { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 18px; max-width: 46em; }
+  .hero-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 28px 0 8px; }
+  .hero-demo figure { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .hero-demo img { width: 100%; display: block; }
+  .hero-demo figcaption { font-family: var(--mono); font-size: 13px; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--border); }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px 0 8px; }
+  .btn { display: inline-block; padding: 10px 18px; border-radius: 6px; font-weight: 600; border: 1px solid var(--border); }
+  .btn.primary { background: var(--accent); color: #0b0f14; border-color: var(--accent); }
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 24px; margin-bottom: 16px; letter-spacing: -0.01em; }
+  pre { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; }
+  code { font-family: var(--mono); }
+  p.code-label { font-family: var(--mono); font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  td:first-child { font-weight: 600; }
+  .faq dt { font-weight: 700; margin-top: 18px; }
+  .faq dd { color: var(--muted); margin-top: 4px; }
+  footer { color: var(--muted); padding: 28px 0 48px; font-size: 14px; }
+  @media (max-width: 720px) { .hero-demo { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <span class="name">zcode-computer-use</span>
+    <a href="https://github.com/sainzs/zcode-computer-use">GitHub ↗</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="badges">
+    <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
+    <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="Python 3.9+">
+    <img src="https://img.shields.io/badge/platform-macOS-lightgrey" alt="macOS">
+    <img src="https://img.shields.io/badge/pip%20dependencies-0-orange" alt="zero dependencies">
+    <img src="https://img.shields.io/badge/tests-21%20%2F%2022%20green-brightgreen" alt="tests">
+  </div>
+
+  <h1>Computer control for AI coding agents — <span class="hl">one stdlib-only file</span>.</h1>
+  <p class="sub">A Model Context Protocol server that gives an agent eyes and hands on native macOS apps:
+  a per-window screenshot plus an indexed accessibility tree, element-first actions with pixel fallback,
+  and diff markers that show exactly what the last action changed. Read the whole driver in an afternoon.
+  No pip installs. No build step. No daemon.</p>
+
+  <div class="hero-demo">
+    <figure>
+      <img src="demo/cinta-quickstart.gif" alt="selftest preflight, 6/6 probes green">
+      <figcaption>selftest → 6/6 probes green</figcaption>
+    </figure>
+    <figure>
+      <img src="demo/cinta-tests.gif" alt="protocol suite, 21 tests OK">
+      <figcaption>21 protocol tests → OK</figcaption>
+    </figure>
+    <figure>
+      <img src="demo/before-scroll.png" alt="Safari before scrolling">
+      <figcaption>get_app_state → observe</figcaption>
+    </figure>
+    <figure>
+      <img src="demo/after-scroll-right-2.png" alt="Safari after synthetic scroll right">
+      <figcaption>scroll right 3 pages → synthetic wheel events, no mouse touched</figcaption>
+    </figure>
+  </div>
+
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/sainzs/zcode-computer-use#install">Install — copy-paste JSON</a>
+    <a class="btn" href="https://github.com/sainzs/zcode-computer-use#verification">Run the tests</a>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>Observe → act → verify</h2>
+<pre>get_app_state  →  screenshot PNG + indexed AX tree            # see the app
+click element_index 12                                        # act (AXPress)
+get_app_state  →  tree: "+3 new, ~1 changed, 0 gone"          # see what changed</pre>
+    <p class="code-label">After every action the tree goes stale; diff markers ([+n]/[~n]) are keyed by tree
+    position, so the next observation tells the agent what one click did — without re-reading the window.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Install</h2>
+    <p class="code-label">Add to your MCP config (ZCode, Claude Code, Cursor, any MCP host):</p>
+<pre>{
+  "mcpServers": {
+    "zcode-computer-use": {
+      "command": "python3",
+      "args": ["/absolute/path/to/zcode-computer-use/mcp/server.py"],
+      "env": { "PYTHONUNBUFFERED": "1" }
+    }
+  }
+}</pre>
+    <p class="code-label">Then grant the host app Accessibility + Screen Recording (System Settings → Privacy &amp; Security)
+    and run the preflight — it names the exact missing permission:</p>
+<pre>python3 mcp/server.py selftest</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Why this over heavier servers</h2>
+    <table>
+      <tr><th></th><th>zcode-computer-use</th><th>typical alternative</th></tr>
+      <tr><td>Install surface</td><td>one .py, zero pip deps</td><td>runtime + package graph</td></tr>
+      <tr><td>Auditability</td><td>whole driver ~1,800 lines</td><td>trust the bundle</td></tr>
+      <tr><td>Tree hygiene</td><td>forced re-fetch, anti-forgery, diff markers</td><td>varies</td></tr>
+      <tr><td>Errors</td><td>structured {code, message, remedy}</td><td>prose strings</td></tr>
+      <tr><td>Scroll</td><td>4-way, verified, session-tap recipe documented</td><td>often vertical-only, unverified</td></tr>
+      <tr><td>Text selection</td><td>content-verified + keyboard fallback</td><td>rare</td></tr>
+      <tr><td>Tests</td><td>21 protocol + 22-check live E2E</td><td>—</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <dl class="faq">
+      <dt>Why does my scroll do nothing?</dt>
+      <dd>Because macOS silently drops wheel events posted to the HID event tap — the route most
+      tutorials use. This server posts pixel-unit events to the session tap via Apple's bundled
+      Python (pyobjc). The trap is documented in the README and handled in code.</dd>
+      <dt>Does it steal focus to observe an app?</dt>
+      <dd>No. <code>activate:false</code> captures and reads a background window without raising it.
+      Activation is opt-in per call; launching apps always is.</dd>
+      <dt>How does the agent know its click worked?</dt>
+      <dd>The next observation carries diff markers keyed by tree position: which elements appeared,
+      which changed, which vanished. Selection results are verified against element content.</dd>
+      <dt>macOS only?</dt>
+      <dd>Yes — the driving stack is System Events, CGWindowList, screencapture and cliclick.
+      That's also why the whole thing fits in one auditable file.</dd>
+      <dt>Zero dependencies — even for screenshots and scrolling?</dt>
+      <dd>Yes for everything except synthetic scroll, which shells to Apple's bundled
+      <code>/usr/bin/python3</code> (pyobjc ships with the Xcode CLT). No pip anywhere.</dd>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    MIT license · built as a plugin for <a href="https://z.ai">ZCode</a> · issues and PRs welcome on
+    <a href="https://github.com/sainzs/zcode-computer-use">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>
