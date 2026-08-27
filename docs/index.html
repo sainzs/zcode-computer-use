@@ -183,6 +183,7 @@
     <div class="links">
       <a href="#install">Install</a>
       <a href="#why">Why</a>
+      <a href="#refuses">Refuses</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/sainzs/zcode-computer-use">GitHub ↗</a>
     </div>
@@ -293,9 +294,29 @@
   </div>
 </section>
 
+<section id="refuses">
+  <div class="wrap">
+    <div class="section-head"><span class="no">04</span><h2>What it refuses</h2></div>
+    <dl class="faq">
+      <dt>steal focus to observe</dt>
+      <dd><code>activate:false</code> reads background windows without raising them; activation is opt-in per call.</dd>
+      <dt>launch apps silently</dt>
+      <dd>A non-running app is an <code>app_not_found</code> error unless you pass <code>launch:true</code>.</dd>
+      <dt>trust its own memory of the UI</dt>
+      <dd>Element indexes die with the tree that produced them — forced re-fetch, anti-forgery address chains.</dd>
+      <dt>return prose errors</dt>
+      <dd>Every failure is structured <code>{code, message, remedy}</code> JSON.</dd>
+      <dt>phone home, ever</dt>
+      <dd>No telemetry, no network calls, no accounts.</dd>
+      <dt>grow a dependency graph</dt>
+      <dd>One stdlib-only file; scroll shells to Apple's bundled <code>/usr/bin/python3</code>, nothing pip-installed.</dd>
+    </dl>
+  </div>
+</section>
+
 <section id="faq">
   <div class="wrap">
-    <div class="section-head"><span class="no">04</span><h2>FAQ</h2></div>
+    <div class="section-head"><span class="no">05</span><h2>FAQ</h2></div>
     <dl class="faq">
       <dt>Why does my scroll do nothing?</dt>
       <dd>macOS silently drops wheel events posted to the HID event tap — the route most tutorials use.
