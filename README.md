@@ -20,14 +20,14 @@ After every action the tree is marked stale; the next `get_app_state` shows exac
 
 Preflight and verification (GIFs rendered with [cinta](https://github.com/sainzs/cinta)):
 
-![selftest preflight — 6/6 probes green](demo/cinta-quickstart.gif)
-![protocol suite — 21 tests OK](demo/cinta-tests.gif)
+![selftest preflight — 6/6 probes green](docs/demo/cinta-quickstart.gif)
+![protocol suite — 21 tests OK](docs/demo/cinta-tests.gif)
 
 And real frames captured by the E2E suite while verifying 4-way scroll (Safari, no mouse touch — pure synthetic wheel events):
 
 | before | after `scroll right 3 pages` |
 |---|---|
-| ![](demo/before-scroll.png) | ![](demo/after-scroll-right-2.png) |
+| ![](docs/demo/before-scroll.png) | ![](docs/demo/after-scroll-right-2.png) |
 
 The scroll path is the part most desktop-automation repos don't test — and the part most likely to silently not work: wheel events posted to macOS's HID event tap are **dropped without error**. This server posts pixel-unit events to the session tap via Apple's bundled Python (pyobjc) and ships the evidence in the test suite.
 
