@@ -8,4 +8,4 @@
 - `before-scroll.png` / `after-scroll-right-2.png` — real frames from the
   E2E scroll verification (Safari, synthetic wheel events only). Used in
   README + landing page.
-- `after-scroll-right.png` — intermediate frame, spare.
+- `after-scroll-right-2.png` — after `scroll right 2 pages`: X3500 dead center, ~3,270px travelled on synthetic wheel events alone.

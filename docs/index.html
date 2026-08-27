@@ -5,112 +5,260 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>zcode-computer-use — computer control for AI coding agents</title>
 <meta name="description" content="A single-file, stdlib-only MCP server that gives AI agents eyes and hands on macOS: per-window screenshots, an indexed accessibility tree with diff markers, element-first actions, verified text selection, and 4-way scroll.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d1117; --panel: #161b22; --border: #30363d;
-    --fg: #e6edf3; --muted: #8b949e; --accent: #3fb950; --accent2: #58a6ff;
-    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --bg: #090b0e;
+    --bg-raise: #0e1116;
+    --panel: #10141a;
+    --border: #1e242c;
+    --border-bright: #2b333d;
+    --fg: #f2f5f7;
+    --muted: #98a2ad;
+    --dim: #626c76;
+    --mint: #00ffb2;
+    --mint-dim: rgba(0, 255, 178, .38);
+    --mint-faint: rgba(0, 255, 178, .14);
+    --sans: "Geist", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   }
   * { box-sizing: border-box; margin: 0; }
-  body { background: var(--bg); color: var(--fg); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  a { color: var(--accent2); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
-  header { border-bottom: 1px solid var(--border); }
-  .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; }
-  .nav .name { font-family: var(--mono); font-weight: 700; }
-  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0 8px; }
-  .badges img { height: 20px; }
-  h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; letter-spacing: -0.02em; margin: 12px 0 16px; }
-  h1 .hl { color: var(--accent); }
-  .sub { color: var(--muted); font-size: 18px; max-width: 46em; }
-  .hero-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 28px 0 8px; }
-  .hero-demo figure { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel); }
-  .hero-demo img { width: 100%; display: block; }
-  .hero-demo figcaption { font-family: var(--mono); font-size: 13px; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--border); }
-  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px 0 8px; }
-  .btn { display: inline-block; padding: 10px 18px; border-radius: 6px; font-weight: 600; border: 1px solid var(--border); }
-  .btn.primary { background: var(--accent); color: #0b0f14; border-color: var(--accent); }
-  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
-  h2 { font-size: 24px; margin-bottom: 16px; letter-spacing: -0.01em; }
-  pre { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; }
-  code { font-family: var(--mono); }
-  p.code-label { font-family: var(--mono); font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
-  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 600; }
+  html { scroll-behavior: smooth; }
+  body {
+    background:
+      radial-gradient(1100px 500px at 50% -80px, rgba(0, 255, 178, .07), transparent 60%),
+      var(--bg);
+    color: var(--fg);
+    font: 400 16px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- announcement chip ---------- */
+  .announce { display: flex; justify-content: center; padding: 18px 24px 0; }
+  .announce span {
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+    border: 1px solid var(--border); background: var(--bg-raise);
+    border-radius: 999px; padding: 7px 16px;
+  }
+  .announce b { color: var(--fg); font-weight: 600; }
+  .announce .dot { color: var(--mint); }
+
+  /* ---------- nav ---------- */
+  header { border-bottom: 1px solid var(--border); background: rgba(9, 11, 14, .8); }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; max-width: 1060px; margin: 0 auto; }
+  .wordmark { font-family: var(--mono); font-weight: 600; font-size: 14.5px; letter-spacing: .02em; }
+  .wordmark .bracket { color: var(--mint); }
+  .nav .links { display: flex; gap: 22px; font-size: 14px; color: var(--muted); }
+  .nav .links a:hover { color: var(--fg); }
+
+  /* ---------- hero ---------- */
+  .hero { text-align: center; padding: 72px 24px 40px; }
+  .kicker {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .22em;
+    color: var(--dim); text-transform: uppercase; margin-bottom: 22px;
+  }
+  .kicker em { color: var(--mint); font-style: normal; }
+  h1 {
+    font-size: clamp(34px, 6vw, 62px); font-weight: 800; line-height: 1.04;
+    letter-spacing: -.035em; margin: 0 auto 20px; max-width: 15em;
+  }
+  h1 .hl { color: var(--mint); }
+  .sub { color: var(--muted); font-size: 18px; max-width: 44em; margin: 0 auto; }
+  .sub b { color: var(--fg); font-weight: 600; }
+
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 30px 0 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 13.5px; font-weight: 500;
+    padding: 12px 20px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border-bright); background: var(--panel); color: var(--fg);
+    transition: border-color .15s, transform .15s;
+  }
+  .btn:hover { border-color: var(--mint-dim); transform: translateY(-1px); }
+  .btn.primary { background: #f2f5f7; color: #0b0d10; border-color: #f2f5f7; font-weight: 600; }
+  .btn.primary:hover { border-color: #fff; }
+  .btn .copy-tag { color: inherit; opacity: .55; font-size: 12px; }
+  .metrics { font-family: var(--mono); font-size: 13px; color: var(--dim); margin-top: 14px; }
+  .metrics b { color: var(--fg); font-weight: 600; }
+
+  /* ---------- selection-marquee frame (the motif) ---------- */
+  .marquee { position: relative; padding: 34px; margin: 44px auto 0; max-width: 980px; }
+  .marquee::before {
+    content: ""; position: absolute; inset: 0;
+    border: 1px dashed var(--mint-dim); border-radius: 4px; pointer-events: none;
+  }
+  .handle {
+    position: absolute; width: 9px; height: 9px; background: var(--bg);
+    border: 1.5px solid var(--mint); z-index: 2;
+  }
+  .handle.tl { top: -5px; left: -5px; } .handle.tr { top: -5px; right: -5px; }
+  .handle.bl { bottom: -5px; left: -5px; } .handle.br { bottom: -5px; right: -5px; }
+  .marquee .label {
+    position: absolute; top: -9px; left: 24px; padding: 0 8px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+    color: var(--mint); background: var(--bg); text-transform: uppercase;
+  }
+
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .demo-grid figure {
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    background: var(--panel);
+  }
+  .demo-grid img { width: 100%; display: block; }
+  .demo-grid figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+    padding: 9px 14px; border-top: 1px solid var(--border); text-align: left;
+  }
+  .demo-grid figcaption .sel { color: var(--mint); }
+
+  /* ---------- sections ---------- */
+  section { border-top: 1px solid var(--border); }
+  .section-head { display: flex; align-items: baseline; gap: 16px; margin: 56px 0 22px; }
+  .section-head .no { font-family: var(--mono); font-size: 12px; color: var(--mint); letter-spacing: .18em; }
+  .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  .loop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 56px; }
+  .loop .step { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-raise); padding: 20px; }
+  .loop .step .tag { font-family: var(--mono); font-size: 11.5px; color: var(--mint); letter-spacing: .16em; text-transform: uppercase; }
+  .loop .step pre {
+    background: none; border: none; padding: 12px 0 0; font-size: 12.8px;
+    line-height: 1.7; color: var(--muted); overflow-x: auto;
+  }
+  .loop .step pre .c { color: var(--mint); }
+
+  pre.block {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px; overflow-x: auto; font-family: var(--mono);
+    font-size: 13.5px; line-height: 1.6; position: relative;
+  }
+  .copy-btn {
+    position: absolute; top: 10px; right: 10px; font-family: var(--mono);
+    font-size: 11.5px; color: var(--muted); background: var(--bg-raise);
+    border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; cursor: pointer;
+  }
+  .copy-btn:hover { color: var(--mint); border-color: var(--mint-dim); }
+  .micro { font-family: var(--mono); font-size: 12.5px; color: var(--dim); margin: 12px 0 0; }
+  .micro b { color: var(--muted); font-weight: 500; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 500; background: var(--bg-raise); }
   td:first-child { font-weight: 600; }
-  .faq dt { font-weight: 700; margin-top: 18px; }
-  .faq dd { color: var(--muted); margin-top: 4px; }
-  footer { color: var(--muted); padding: 28px 0 48px; font-size: 14px; }
-  @media (max-width: 720px) { .hero-demo { grid-template-columns: 1fr; } }
+  td:nth-child(2) { color: var(--fg); }
+  td:nth-child(3) { color: var(--muted); }
+
+  .faq dt { font-weight: 600; margin-top: 20px; }
+  .faq dt::before { content: "> "; color: var(--mint); font-family: var(--mono); font-weight: 500; }
+  .faq dd { color: var(--muted); margin: 6px 0 0; max-width: 52em; }
+  .faq dd code { font-family: var(--mono); font-size: 13px; color: var(--fg); background: var(--panel); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; }
+
+  footer { border-top: 1px solid var(--border); color: var(--dim); padding: 30px 0 52px; font-family: var(--mono); font-size: 12.5px; }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--mint); }
+
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    font-family: var(--mono); font-size: 13px; color: #0b0d10; background: var(--mint);
+    padding: 9px 18px; border-radius: 8px; transition: transform .2s; z-index: 9;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 760px) {
+    .demo-grid, .loop { grid-template-columns: 1fr; }
+    .hero { padding-top: 48px; }
+  }
 </style>
 </head>
 <body>
 
+<div class="announce"><span><span class="dot">●</span> <b>Built and battle-tested on ZCode · GLM-5.3</b> — 21/21 protocol · 22/22 live E2E</span></div>
+
 <header>
-  <div class="wrap nav">
-    <span class="name">zcode-computer-use</span>
-    <a href="https://github.com/sainzs/zcode-computer-use">GitHub ↗</a>
+  <div class="nav">
+    <a class="wordmark" href="#"><span class="bracket">[</span>zcode-computer-use<span class="bracket">]</span></a>
+    <div class="links">
+      <a href="#install">Install</a>
+      <a href="#why">Why</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/sainzs/zcode-computer-use">GitHub ↗</a>
+    </div>
   </div>
 </header>
 
-<div class="wrap">
-  <div class="badges">
-    <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
-    <img src="https://img.shields.io/badge/python-3.9%2B-blue" alt="Python 3.9+">
-    <img src="https://img.shields.io/badge/platform-macOS-lightgrey" alt="macOS">
-    <img src="https://img.shields.io/badge/pip%20dependencies-0-orange" alt="zero dependencies">
-    <img src="https://img.shields.io/badge/tests-21%20%2F%2022%20green-brightgreen" alt="tests">
-  </div>
-
-  <h1>Computer control for AI coding agents — <span class="hl">one stdlib-only file</span>.</h1>
-  <p class="sub">A Model Context Protocol server that gives an agent eyes and hands on native macOS apps:
-  a per-window screenshot plus an indexed accessibility tree, element-first actions with pixel fallback,
-  and diff markers that show exactly what the last action changed. Read the whole driver in an afternoon.
-  No pip installs. No build step. No daemon.</p>
-
-  <div class="hero-demo">
-    <figure>
-      <img src="demo/cinta-quickstart.gif" alt="selftest preflight, 6/6 probes green">
-      <figcaption>selftest → 6/6 probes green</figcaption>
-    </figure>
-    <figure>
-      <img src="demo/cinta-tests.gif" alt="protocol suite, 21 tests OK">
-      <figcaption>21 protocol tests → OK</figcaption>
-    </figure>
-    <figure>
-      <img src="demo/before-scroll.png" alt="Safari before scrolling">
-      <figcaption>get_app_state → observe</figcaption>
-    </figure>
-    <figure>
-      <img src="demo/after-scroll-right-2.png" alt="Safari after synthetic scroll right">
-      <figcaption>scroll right 3 pages → synthetic wheel events, no mouse touched</figcaption>
-    </figure>
-  </div>
+<div class="hero">
+  <div class="kicker">Model Context Protocol <em>·</em> macOS <em>·</em> single file <em>·</em> zero deps</div>
+  <h1>The agent selects.<br>The screen <span class="hl">answers.</span></h1>
+  <p class="sub">Computer control for AI coding agents: a per-window screenshot plus an indexed
+  accessibility tree, element-first actions with pixel fallback — and after every action,
+  <b>diff markers that show exactly what changed</b>. One stdlib-only Python file. No pip installs.
+  No daemon. Read the whole driver in an afternoon.</p>
 
   <div class="cta">
-    <a class="btn primary" href="https://github.com/sainzs/zcode-computer-use#install">Install — copy-paste JSON</a>
-    <a class="btn" href="https://github.com/sainzs/zcode-computer-use#verification">Run the tests</a>
+    <button class="btn primary" id="install-copy">Copy MCP config <span class="copy-tag">⧉</span></button>
+    <a class="btn" href="https://github.com/sainzs/zcode-computer-use">github.com/sainzs/zcode-computer-use ↗</a>
+  </div>
+  <div class="metrics"><b>1 file</b> · <b>0</b> pip dependencies · <b>12</b> tools · <b>4-way</b> verified scroll</div>
+
+  <div class="marquee">
+    <span class="handle tl"></span><span class="handle tr"></span><span class="handle bl"></span><span class="handle br"></span>
+    <span class="label">AXWindow — observed</span>
+    <div class="demo-grid">
+      <figure>
+        <img src="demo/cinta-quickstart.gif" alt="selftest preflight, 6/6 probes green">
+        <figcaption><span class="sel">$</span> selftest → 6/6 probes green</figcaption>
+      </figure>
+      <figure>
+        <img src="demo/cinta-tests.gif" alt="protocol suite, 21 tests OK">
+        <figcaption><span class="sel">$</span> protocol suite → 21 tests, OK</figcaption>
+      </figure>
+      <figure>
+        <img src="demo/before-scroll.png" alt="Safari before scrolling">
+        <figcaption><span class="sel">observe</span> — get_app_state, before</figcaption>
+      </figure>
+      <figure>
+        <img src="demo/after-scroll-right-2.png" alt="Safari after synthetic scroll right">
+        <figcaption><span class="sel">act</span> — scroll right 2 pages, wheel events only</figcaption>
+      </figure>
+    </div>
   </div>
 </div>
 
 <section>
   <div class="wrap">
-    <h2>Observe → act → verify</h2>
-<pre>get_app_state  →  screenshot PNG + indexed AX tree            # see the app
-click element_index 12                                        # act (AXPress)
-get_app_state  →  tree: "+3 new, ~1 changed, 0 gone"          # see what changed</pre>
-    <p class="code-label">After every action the tree goes stale; diff markers ([+n]/[~n]) are keyed by tree
-    position, so the next observation tells the agent what one click did — without re-reading the window.</p>
+    <div class="section-head"><span class="no">01</span><h2>Observe → act → verify</h2></div>
+    <div class="loop">
+      <div class="step">
+        <div class="tag">Observe</div>
+        <pre>get_app_state
+→ screenshot PNG
+→ indexed AX tree
+→ pixel scale</pre>
+      </div>
+      <div class="step">
+        <div class="tag">Act</div>
+        <pre>click element_index 12
+<span class="c"># AXPress preferred</span>
+<span class="c"># or x/y screenshot px</span></pre>
+      </div>
+      <div class="step">
+        <div class="tag">Verify</div>
+        <pre>get_app_state
+→ tree: <span class="c">+3 new ~1 changed</span>
+→ diff keyed by position,
+  not by brittle index</pre>
+      </div>
+    </div>
   </div>
 </section>
 
-<section>
+<section id="install">
   <div class="wrap">
-    <h2>Install</h2>
-    <p class="code-label">Add to your MCP config (ZCode, Claude Code, Cursor, any MCP host):</p>
-<pre>{
+    <div class="section-head"><span class="no">02</span><h2>Install</h2></div>
+    <pre class="block" id="mcp-json">{
   "mcpServers": {
     "zcode-computer-use": {
       "command": "python3",
@@ -119,58 +267,83 @@ get_app_state  →  tree: "+3 new, ~1 changed, 0 gone"          # see what chang
     }
   }
 }</pre>
-    <p class="code-label">Then grant the host app Accessibility + Screen Recording (System Settings → Privacy &amp; Security)
-    and run the preflight — it names the exact missing permission:</p>
-<pre>python3 mcp/server.py selftest</pre>
+    <p class="micro">Paste into your MCP config — <b>ZCode, Claude Code, Cursor</b>, any MCP host. Then grant the
+    host app <b>Accessibility + Screen Recording</b> (System Settings → Privacy &amp; Security) and run
+    <b>python3 mcp/server.py selftest</b> — it names the exact missing permission.</p>
   </div>
 </section>
 
-<section>
+<section id="why">
   <div class="wrap">
-    <h2>Why this over heavier servers</h2>
+    <div class="section-head"><span class="no">03</span><h2>Why this over heavier servers</h2></div>
     <table>
       <tr><th></th><th>zcode-computer-use</th><th>typical alternative</th></tr>
       <tr><td>Install surface</td><td>one .py, zero pip deps</td><td>runtime + package graph</td></tr>
       <tr><td>Auditability</td><td>whole driver ~1,800 lines</td><td>trust the bundle</td></tr>
       <tr><td>Tree hygiene</td><td>forced re-fetch, anti-forgery, diff markers</td><td>varies</td></tr>
       <tr><td>Errors</td><td>structured {code, message, remedy}</td><td>prose strings</td></tr>
+      <tr><td>Focus</td><td>activate:false — observe without stealing focus</td><td>usually activates</td></tr>
       <tr><td>Scroll</td><td>4-way, verified, session-tap recipe documented</td><td>often vertical-only, unverified</td></tr>
       <tr><td>Text selection</td><td>content-verified + keyboard fallback</td><td>rare</td></tr>
       <tr><td>Tests</td><td>21 protocol + 22-check live E2E</td><td>—</td></tr>
     </table>
+    <p class="micro">The pitch isn't more features — it's that the whole driving stack fits in one auditable file,
+    with the hard-won traps written down: <b>HID-tap wheel-event drops</b>, <b>apps that silently ignore
+    scripted selection writes</b>, <b>JXA CFRelease segfaults</b>.</p>
   </div>
 </section>
 
-<section>
+<section id="faq">
   <div class="wrap">
-    <h2>FAQ</h2>
+    <div class="section-head"><span class="no">04</span><h2>FAQ</h2></div>
     <dl class="faq">
       <dt>Why does my scroll do nothing?</dt>
-      <dd>Because macOS silently drops wheel events posted to the HID event tap — the route most
-      tutorials use. This server posts pixel-unit events to the session tap via Apple's bundled
-      Python (pyobjc). The trap is documented in the README and handled in code.</dd>
+      <dd>macOS silently drops wheel events posted to the HID event tap — the route most tutorials use.
+      This server posts pixel-unit events to the session tap via Apple's bundled Python (pyobjc). Documented in code, proven in tests.</dd>
       <dt>Does it steal focus to observe an app?</dt>
       <dd>No. <code>activate:false</code> captures and reads a background window without raising it.
       Activation is opt-in per call; launching apps always is.</dd>
       <dt>How does the agent know its click worked?</dt>
-      <dd>The next observation carries diff markers keyed by tree position: which elements appeared,
-      which changed, which vanished. Selection results are verified against element content.</dd>
+      <dd>The next observation carries diff markers keyed by tree position: which elements appeared, which changed,
+      which vanished. Selection results are verified against element content, not trusted.</dd>
       <dt>macOS only?</dt>
       <dd>Yes — the driving stack is System Events, CGWindowList, screencapture and cliclick.
       That's also why the whole thing fits in one auditable file.</dd>
-      <dt>Zero dependencies — even for screenshots and scrolling?</dt>
-      <dd>Yes for everything except synthetic scroll, which shells to Apple's bundled
-      <code>/usr/bin/python3</code> (pyobjc ships with the Xcode CLT). No pip anywhere.</dd>
+      <dt>Zero dependencies — even for scrolling?</dt>
+      <dd>Everything except synthetic scroll, which shells to Apple's bundled <code>/usr/bin/python3</code>
+      (pyobjc ships with the Xcode CLT). No pip anywhere.</dd>
     </dl>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    MIT license · built as a plugin for <a href="https://z.ai">ZCode</a> · issues and PRs welcome on
-    <a href="https://github.com/sainzs/zcode-computer-use">GitHub</a>
+    MIT license · <a href="https://github.com/sainzs/zcode-computer-use">github.com/sainzs/zcode-computer-use</a>
+    · docs GIFs by <a href="https://github.com/sainzs/cinta">cinta</a> · built with ZCode on GLM
   </div>
 </footer>
+
+<div id="toast">MCP config copied</div>
+
+<script>
+  const JSON_TEXT = document.getElementById("mcp-json").innerText;
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 1600);
+  }
+  function copyConfig() {
+    (navigator.clipboard ? navigator.clipboard.writeText(JSON_TEXT) : Promise.reject())
+      .then(() => toast("MCP config copied"))
+      .catch(() => {
+        const ta = document.createElement("textarea");
+        ta.value = JSON_TEXT; document.body.appendChild(ta);
+        ta.select(); document.execCommand("copy"); ta.remove();
+        toast("MCP config copied");
+      });
+  }
+  document.getElementById("install-copy").addEventListener("click", copyConfig);
+</script>
 
 </body>
 </html>

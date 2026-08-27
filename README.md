@@ -25,7 +25,7 @@ Preflight and verification (GIFs rendered with [cinta](https://github.com/sainzs
 
 And real frames captured by the E2E suite while verifying 4-way scroll (Safari, no mouse touch — pure synthetic wheel events):
 
-| before | after `scroll right 3 pages` |
+| before | after `scroll right 2 pages` |
 |---|---|
 | ![](docs/demo/before-scroll.png) | ![](docs/demo/after-scroll-right-2.png) |
 
