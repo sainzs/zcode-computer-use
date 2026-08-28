@@ -2,6 +2,15 @@
 
 All notable changes to `zcode-computer-use` are documented here.
 
+## 3.0.1 — 2026-08-28
+
+- E2E suite extended to 31 checks: `drag` now verified by moving a real window
+  (+120,+40 pt via its title bar, asserted through CGWindowList),
+  `perform_action` drives a live AXShowMenu discovered via `element_info`, and
+  `press_key` makes a deterministic edit. Coverage table on the site updated —
+  drag/press_key/perform_action bars go to 100% with receipts.
+- Number consistency pass across README, site, banner, and manifests.
+
 ## 3.0.0 — 2026-08-27
 
 First release packaged for distribution (plugin manifest, MIT license,

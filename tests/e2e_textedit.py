@@ -205,6 +205,58 @@ def main() -> int:
         check("no silent launch", err and err["error"]["code"] == "app_not_found",
               json.dumps(err or {}))
 
+        # 12. drag: move the TextEdit window by its title bar, verify via CGWindowList
+        lw2, err = c.call("list_windows", {"app": "TextEdit"})
+        check("drag pre: window listed", err is None and lw2 and lw2["windows"],
+              json.dumps(err or {}))
+        bx, by = (lw2 or {}).get("windows", [{}])[0].get("bounds_pt", "0,0 0,0").split()[0].split(",")
+        bx, by = int(float(bx)), int(float(by))
+        s7, err = c.call("get_app_state", {"app": "TextEdit", "depth": 0})
+        scale = float([l for l in s7["state"].splitlines()
+                       if "pixel_scale" in l][0].split("pixel_scale ")[1])
+        # title bar center in screenshot pixels
+        tx, ty = 380.0, 14.0 * scale
+        _, err = c.call("drag", {"from_x": tx, "from_y": ty,
+                                 "to_x": tx + 120 * scale, "to_y": ty + 40 * scale})
+        check("drag call", err is None, json.dumps(err or {}))
+        lw3, _ = c.call("list_windows", {"app": "TextEdit"})
+        ax, ay = (lw3 or {}).get("windows", [{}])[0].get("bounds_pt", "0,0 0,0").split()[0].split(",")
+        ax, ay = int(float(ax)), int(float(ay))
+        moved = abs(ax - bx - 120) <= 12 and abs(ay - by - 40) <= 12
+        check("drag moved window ~+120,+40 pt", moved, f"{bx},{by} -> {ax},{ay}")
+        # drag back so the desktop stays tidy
+        c.call("drag", {"from_x": tx + 120 * scale, "from_y": ty + 40 * scale,
+                        "to_x": tx, "to_y": ty})
+
+        # 13. perform_action: drive a real AX action discovered by element_info
+        s8, _ = c.call("get_app_state", {"app": "TextEdit", "depth": 4})
+        info2, err = c.call("element_info", {"element_index": t_idx})
+        actions = (info2 or {}).get("actions", [])
+        check("element exposes AX actions", bool(actions), str(actions))
+        # prefer silent actions; AXShowMenu opens a menu we then dismiss
+        pick = next((a for a in ("AXScrollToVisible", "AXConfirm", "AXShowMenu")
+                     if a in actions), None)
+        check("a drivable action exists", pick is not None, str(actions))
+        if pick:
+            _, err = c.call("perform_action", {"element_index": t_idx,
+                                               "action": pick})
+            check(f"perform_action {pick}", err is None, json.dumps(err or {}))
+            if pick == "AXShowMenu":
+                c.call("press_key", {"key": "escape"})
+
+        # 14. press_key: deterministic edit — backspace deletes the trailing X
+        s9, _ = c.call("get_app_state", {"app": "TextEdit", "depth": 4})
+        _, err = c.call("set_value", {"element_index": t_idx, "value": "PRESSKEY-X"})
+        c.call("get_app_state", {"app": "TextEdit", "depth": 2})
+        _, err = c.call("press_key", {"key": "super+right"})
+        check("press_key super+right", err is None, json.dumps(err or {}))
+        _, err = c.call("press_key", {"key": "delete"})
+        check("press_key delete", err is None, json.dumps(err or {}))
+        sA, _ = c.call("get_app_state", {"app": "TextEdit", "depth": 4})
+        infoA, _ = c.call("element_info", {"element_index": t_idx})
+        check("press_key edited content", (infoA or {}).get("value", "") == "PRESSKEY-",
+              repr((infoA or {}).get("value", "")))
+
     finally:
         finish(c)
     return 0

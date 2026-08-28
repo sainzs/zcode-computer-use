@@ -6,7 +6,7 @@
 
 **Computer control for AI coding agents — screenshots + an accessibility tree, in one stdlib-only Python file.**
 
-![License](https://img.shields.io/badge/license-MIT-green) ![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Deps](https://img.shields.io/badge/pip%20dependencies-0-orange) ![Tests](https://img.shields.io/badge/tests-21%20protocol%20%2F%2022%20live-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-green) ![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey) ![Deps](https://img.shields.io/badge/pip%20dependencies-0-orange) ![Tests](https://img.shields.io/badge/tests-21%20protocol%20%2F%2031%20live-brightgreen)
 
 An MCP server that gives an agent eyes and hands on native macOS apps: a per-window screenshot plus an indexed accessibility tree, element-first actions with screenshot-pixel fallback. No pip installs, no build step, no daemon — one readable file you can audit in an afternoon and hack on the same evening.
 
@@ -92,7 +92,7 @@ The reject list is a design document. This server will not:
 | Focus | background observe never steals focus | usually activates |
 | Scroll | 4-way, verified, session-tap recipe documented | often vertical-only, unverified |
 | Text selection | content-verified with keyboard fallback | rare |
-| Tests | 21 protocol + 22-check live E2E you can run | — |
+| Tests | 21 protocol + 31-check live E2E you can run | — |
 
 The pitch isn't more features — it's that the whole driving stack (System Events, cliclick, screencapture, CGWindowList, CGEventPost) fits in a single auditable file with its hard-won traps written down: `CFRelease` segfaults in JXA, HID-tap wheel-event drops, apps that silently ignore scripted selection writes. If you want to *learn* how computer control works — or fork it into your own driver — start here.
 
@@ -104,7 +104,7 @@ The pitch isn't more features — it's that the whole driving stack (System Even
 
 ```bash
 python3 tests/test_protocol.py    # 21 golden protocol tests, headless-safe
-python3 tests/e2e_textedit.py     # 22-check live drive of TextEdit
+python3 tests/e2e_textedit.py     # 31-check live drive of TextEdit
 python3 mcp/server.py selftest    # deps + permissions preflight
 ```
 

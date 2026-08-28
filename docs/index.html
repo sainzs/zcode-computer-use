@@ -281,12 +281,12 @@
       <div><span>pip dependencies</span><b>0</b></div>
       <div><span>tools</span><b>12</b></div>
       <div><span>scroll</span><b>4-way</b></div>
-      <div><span>tests green</span><b>21 + 22</b></div>
+      <div><span>tests green</span><b>21 + 31</b></div>
     </div>
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="n"><span data-count="22">0</span></div><div class="l">live E2E checks</div></div>
+    <div class="stat"><div class="n"><span data-count="31">0</span></div><div class="l">live E2E checks</div></div>
     <div class="stat"><div class="n"><span data-count="21">0</span></div><div class="l">protocol tests</div></div>
     <div class="stat"><div class="n"><span data-count="0">0</span></div><div class="l">pip dependencies</div></div>
     <div class="stat"><div class="n"><span data-count="3270">0</span><small> px</small></div><div class="l">verified scroll travel</div></div>
@@ -385,13 +385,13 @@ not by brittle index</div>
           <div class="cat-row"><span class="cat-tool">list_apps</span><span class="cat-kind">observe</span><span class="cat-sig">()</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · protocol</span></div></div>
           <div class="cat-row"><span class="cat-tool">click</span><span class="cat-kind">act</span><span class="cat-sig">(element_index | x, y, button, count)</span><div class="cov"><span class="bar"><i style="width:80%"></i></span><span class="lbl">e2e · element path</span></div></div>
           <div class="cat-row"><span class="cat-tool">type_text</span><span class="cat-kind">act</span><span class="cat-sig">(text, method = paste | keys)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · both methods</span></div></div>
-          <div class="cat-row"><span class="cat-tool">press_key</span><span class="cat-kind">act</span><span class="cat-sig">(key)</span><div class="cov"><span class="bar"><i style="width:60%"></i></span><span class="lbl">v1 chords · key-walk</span></div></div>
+          <div class="cat-row"><span class="cat-tool">press_key</span><span class="cat-kind">act</span><span class="cat-sig">(key)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · deterministic edit</span></div></div>
           <div class="cat-row"><span class="cat-tool">scroll<span class="chip">V3</span></span><span class="cat-kind">act</span><span class="cat-sig">(direction, pages, x?, y?)</span><div class="cov"><span class="bar"><i style="width:90%"></i></span><span class="lbl">manual · 4-way safari</span></div></div>
-          <div class="cat-row"><span class="cat-tool">drag</span><span class="cat-kind">act</span><span class="cat-sig">(from_x, from_y, to_x, to_y)</span><div class="cov"><span class="bar"><i style="width:40%"></i></span><span class="lbl">v1 design · not re-driven</span></div></div>
+          <div class="cat-row"><span class="cat-tool">drag</span><span class="cat-kind">act</span><span class="cat-sig">(from_x, from_y, to_x, to_y)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · window move</span></div></div>
           <div class="cat-row"><span class="cat-tool">set_value</span><span class="cat-kind">act</span><span class="cat-sig">(element_index, value)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e</span></div></div>
           <div class="cat-row"><span class="cat-tool">select_text<span class="chip">V3</span></span><span class="cat-kind">act</span><span class="cat-sig">(element_index, start, length)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · keyboard fallback</span></div></div>
           <div class="cat-row"><span class="cat-tool">element_info</span><span class="cat-kind">inspect</span><span class="cat-sig">(element_index)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e</span></div></div>
-          <div class="cat-row"><span class="cat-tool">perform_action</span><span class="cat-kind">act</span><span class="cat-sig">(element_index, action)</span><div class="cov"><span class="bar"><i style="width:50%"></i></span><span class="lbl">protocol · on demand</span></div></div>
+          <div class="cat-row"><span class="cat-tool">perform_action</span><span class="cat-kind">act</span><span class="cat-sig">(element_index, action)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · live AXShowMenu</span></div></div>
         </div>
       </div>
       <p class="micro">coverage bars are literal: which suites drove each tool — <b>drag</b> ships from the v1 design and has
@@ -432,7 +432,7 @@ not by brittle index</div>
         <div class="row"><span class="a">Focus</span><span class="b">observe without stealing focus</span><span class="c">usually activates</span></div>
         <div class="row"><span class="a">Scroll</span><span class="b">4-way, verified, session-tap recipe</span><span class="c">often vertical-only, unverified</span></div>
         <div class="row"><span class="a">Text selection</span><span class="b">content-verified + keyboard fallback</span><span class="c">rare</span></div>
-        <div class="row"><span class="a">Tests</span><span class="b">21 protocol + 22-check live E2E</span><span class="c">—</span></div>
+        <div class="row"><span class="a">Tests</span><span class="b">21 protocol + 31-check live E2E</span><span class="c">—</span></div>
       </div>
       <p class="micro">the pitch isn't more features — it's one auditable file with the traps written down:
       <b>HID-tap wheel-event drops</b> · <b>apps that ignore scripted selection writes</b> · <b>JXA CFRelease segfaults</b></p>
