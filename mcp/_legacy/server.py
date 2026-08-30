@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """zcode-computer-use MCP server (stdio) — v3.
 
+SUPERSEDED 2026-08-30: this module is the v3 (3.0.1) Python reference and is
+NOT the live server. 4.0 replaced it with the Go binary `cuu`
+(../cuu/): same tool surface, CLI verbs plus `cuu serve` as a thin
+stdio-MCP shim. Kept as the behavioral reference; nothing imports it.
+
+
 A stdlib-only macOS GUI-control server:
 
   - get_app_state returns a per-window screenshot (PNG file path) plus an

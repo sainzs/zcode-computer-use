@@ -4,11 +4,13 @@ description: Control macOS GUI apps from ZCode via the zcode-computer-use MCP se
 license: MIT
 ---
 
-# Computer use (macOS, ZCode v3)
+# Computer use (macOS, ZCode v4)
 
 Element-first with screenshot-pixel coordinate fallback, forced state
 re-fetch after every action, and diff markers so one re-observe tells you
-exactly what your last action changed.
+exactly what your last action changed. The server is the `cuu` Go binary;
+every tool is also a CLI verb (`cuu click --element_index 4` → one JSON
+document, exit 0/1/2) sharing the same state file as the MCP session.
 
 ## Prerequisites (once per host app)
 
@@ -20,8 +22,9 @@ System Settings → Privacy & Security:
 
 `cliclick` must be on PATH (`brew install cliclick`); scroll uses Apple's
 bundled `/usr/bin/python3` (present with Xcode CLT).
-Preflight: `python3 plugins/zcode-computer-use/mcp/server.py selftest` —
-it names the exact missing grant.
+Preflight: `plugins/zcode-computer-use/cuu/bin/cuu selftest` — it names
+the exact missing grant. (Build first if the binary is missing:
+`cd plugins/zcode-computer-use/cuu && go build -o bin/cuu .`)
 
 ## The operating loop
 

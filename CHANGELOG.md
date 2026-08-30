@@ -2,6 +2,53 @@
 
 All notable changes to `zcode-computer-use` are documented here.
 
+## 4.0.0 — 2026-08-30
+
+The Python server is ported to Go: one static binary (`cuu`) with two
+surfaces — the stdio MCP server (`cuu serve`) and a CLI with one
+JSON-printing verb per tool. The protocol, tool schemas, error taxonomy,
+and state format are unchanged; the golden Python tests still pass
+against the protocol (now mirrored as `go test` cases that speak raw
+JSON-RPC to a spawned `cuu serve`).
+
+### Added
+
+- `cuu` CLI verbs for every tool (`cuu get_app_state --app TextEdit`,
+  `cuu click --element_index 4`, …): one JSON document on stdout, exit
+  `0` ok / `1` structured tool error / `2` usage. Flags map 1:1 onto MCP
+  tool arguments; only explicitly-passed flags are sent.
+- CLI and MCP share the capture/action state on disk (`state.json` in the
+  data dir), so shell calls and a live MCP session see the same stale-state
+  and diff picture.
+- `go test ./...` suite: the v3 golden protocol cases re-expressed against
+  the binary (RPC error taxonomy, strict argument validation,
+  `perform_secondary_action` alias suppression), pure-function goldens for
+  tree parsing/diff and AppleScript escaping, and live-GUI cases that
+  self-skip headless.
+
+### Changed
+
+- The server is a compiled binary; the Python runtime is gone (scroll
+  still shells to Apple's bundled `/usr/bin/python3` for pyobjc Quartz
+  wheel events, as in v3).
+- `mcp/server.py` moved to `mcp/_legacy/server.py` and its suites to
+  `tests/_legacy/` (paths updated; both still run green against the v3
+  file for provenance). `cuu/bin/` is gitignored — build with
+  `go build -o bin/cuu .`.
+
+### Fixed
+
+- The v3 test fixture could exit before the server flushed its final
+  response; the serve loop now flushes per line and once more on exit, so
+  the last reply survives a client that closes its read end first.
+- A window whose System Events index could not be matched fell back to
+  `window 1` silently; the state header now records the mismatch.
+- The activation raise fronted the *previous* state's app (read from
+  stale state, empty on a first capture), so it silently no-opped exactly
+  when it was needed; it now fronts the app being captured. The window
+  list is also re-checked before the raise instead of indexing `[0]`
+  unguarded.
+
 ## 3.0.1 — 2026-08-29
 
 ### Fixed

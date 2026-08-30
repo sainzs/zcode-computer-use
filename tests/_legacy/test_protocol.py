@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Golden protocol tests for the zcode-computer-use MCP server.
 
+SUPERSEDED 2026-08-30: the live protocol goldens are Go tests now
+(../cuu/main_test.go), run with `cd cuu && go test ./...`. This file is
+kept as the reference for what the v3 goldens pinned.
+
+
 Speaks raw JSON-RPC over stdio to a freshly spawned server. Everything here
 runs headless-safe; the two live-GUI cases self-skip when System Events is
 not reachable (no Accessibility grant / no window server).
@@ -18,7 +23,7 @@ import sys
 import unittest
 from pathlib import Path
 
-SERVER = Path(__file__).resolve().parent.parent / "mcp" / "server.py"
+SERVER = Path(__file__).resolve().parent.parent.parent / "mcp" / "_legacy" / "server.py"
 
 
 def gui_available() -> bool:

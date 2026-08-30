@@ -1,7 +1,7 @@
 {
   "name": "zcode-computer-use",
-  "version": "3.0.1",
-  "description": "macOS GUI control for ZCode: per-window screenshots plus an indexed accessibility tree with diff markers, element-first actions with coordinate fallback, background observe, verified text selection, and 4-way scroll. Single-file, stdlib-only MCP server.",
+  "version": "4.0.0",
+  "description": "macOS GUI control for ZCode: per-window screenshots plus an indexed accessibility tree with diff markers, element-first actions with coordinate fallback, background observe, verified text selection, and 4-way scroll. Single static Go binary — MCP server over stdio plus a cuu CLI with one JSON-printing verb per tool.",
   "author": {
     "name": "Santiago Sainz"
   },
@@ -16,13 +16,12 @@
   "skills": "skills",
   "mcpServers": {
     "zcode-computer-use": {
-      "command": "/opt/homebrew/bin/python3",
+      "command": "${ZCODE_PLUGIN_ROOT}/cuu/bin/cuu",
       "args": [
-        "${ZCODE_PLUGIN_ROOT}/mcp/server.py"
+        "serve"
       ],
       "cwd": "${ZCODE_PROJECT_DIR}",
       "env": {
-        "PYTHONUNBUFFERED": "1",
         "ZCODE_CUA_DATA": "${ZCODE_PLUGIN_DATA}"
       }
     }

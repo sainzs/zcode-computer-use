@@ -18,7 +18,7 @@ import sys
 import time
 from pathlib import Path
 
-SERVER = Path(__file__).resolve().parent.parent / "mcp" / "server.py"
+SERVER = Path(__file__).resolve().parent.parent.parent / "mcp" / "_legacy" / "server.py"
 SCRATCH = Path("/tmp/cua-e2e-scratch.txt")
 
 FAILURES = []
