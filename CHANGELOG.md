@@ -2,6 +2,14 @@
 
 All notable changes to `zcode-computer-use` are documented here.
 
+## 3.0.1 — 2026-08-29
+
+### Fixed
+
+- The 3.0.1 manifest bump never reached the server: `SERVER_VERSION`, the
+  `--version` output, and the protocol tests all still reported 3.0.0, and
+  this changelog had no 3.0.1 entry. All surfaces now agree on 3.0.1.
+
 ## 3.0.0 — 2026-08-27
 
 First release packaged for distribution (plugin manifest, MIT license,

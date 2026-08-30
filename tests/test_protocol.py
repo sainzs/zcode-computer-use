@@ -91,7 +91,7 @@ class ProtocolTests(unittest.TestCase):
             self.assertEqual(resp["result"]["protocolVersion"], "2025-03-26")
             self.assertEqual(resp["result"]["serverInfo"]["name"],
                              "zcode-computer-use")
-            self.assertEqual(resp["result"]["serverInfo"]["version"], "3.0.0")
+            self.assertEqual(resp["result"]["serverInfo"]["version"], "3.0.1")
             self.assertIn("tools", resp["result"]["capabilities"])
 
     def test_initialize_falls_back_on_unsupported_protocol(self):
@@ -106,7 +106,7 @@ class ProtocolTests(unittest.TestCase):
         res = subprocess.run([sys.executable, str(SERVER), "--version"],
                              capture_output=True, text=True, timeout=10)
         self.assertEqual(res.returncode, 0)
-        self.assertIn("3.0.0", res.stdout)
+        self.assertIn("3.0.1", res.stdout)
 
     # -- discovery ---------------------------------------------------------
 

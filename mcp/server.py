@@ -46,7 +46,7 @@ import time
 from pathlib import Path
 
 SERVER_NAME = "zcode-computer-use"
-SERVER_VERSION = "3.0.0"
+SERVER_VERSION = "3.0.1"
 SUPPORTED_PROTOCOLS = ("2025-03-26", "2025-06-18")
 LATEST_PROTOCOL = SUPPORTED_PROTOCOLS[-1]
 
