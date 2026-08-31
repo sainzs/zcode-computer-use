@@ -44,6 +44,26 @@ the exact missing grant. (Build first if the binary is missing:
    next element action. The diff summary (`+n new, ~n changed, n gone`)
    shows what your action did — scan marked lines first.
 
+## Turn savers (use these before brute-forcing the loop)
+
+- **Menus first for commands**: most app functionality (export, preferences,
+  view toggles) lives in the menu bar, which window captures cannot see.
+  `menu(app)` lists it; `menu(app, path: "File > Export as PDF…")` clicks —
+  titles are exact (including `…`), deeper submenus chain with more `" > "`,
+  and a missing item is a structured `menu_not_found` whose remedy is the
+  listing.
+- **Waiting is one call, not a loop**: after an action that takes time
+  (export, load, install step), `wait_for(text, until: present|gone,
+  timeout_s)` polls the captured window's tree and returns when the
+  condition holds; `wait_timeout` tells you it never did. Never chain
+  get_app_state calls just to wait.
+- **Big trees stay out of context**: `get_app_state(filter: "Save")` shows
+  only matching lines (every index stays targetable); `find(text?, role?)`
+  re-queries the current capture with a different lens without re-capturing.
+- **Skip the file read when the host renders images**:
+  `get_app_state(include_screenshot: true)` attaches the capture as MCP
+  image content (downscaled). In ZCode reading the PNG path also works.
+
 v3 specifics worth reaching for:
 
 - `activate:false` observes a background window without stealing focus

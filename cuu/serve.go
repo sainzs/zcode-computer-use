@@ -70,11 +70,21 @@ func dispatch(method string, params any, hasParams bool) (any, *jsonRpcError) {
 		st := loadState()
 		payload, terr := runTool(name, st, argsMap)
 		if terr == nil {
-			return map[string]any{
-				"content": []map[string]any{
-					{"type": "text", "text": dumpJSON(payload)},
-				},
-			}, nil
+			content := []map[string]any{
+				{"type": "text", "text": dumpJSON(payload)},
+			}
+			// opt-in inline screenshot: an MCP image content block after the
+			// text, so image-rendering clients skip the file-read round trip.
+			// Best-effort — the text payload already carries the PNG path.
+			if name == "get_app_state" && argsMap["include_screenshot"] == true &&
+				st.Screenshot != "" {
+				if data := inlineScreenshot(st.Screenshot); data != "" {
+					content = append(content, map[string]any{
+						"type": "image", "data": data, "mimeType": "image/png",
+					})
+				}
+			}
+			return map[string]any{"content": content}, nil
 		}
 		logEvent("tool_error", map[string]any{"tool": name, "code": terr.Code, "message": terr.Message})
 		return map[string]any{

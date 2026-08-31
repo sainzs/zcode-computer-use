@@ -29,7 +29,9 @@ const toolsManifest = `[
     "depth": {"type": "integer", "minimum": 0, "maximum": 12, "default": 8},
     "window": {"description": "window id (integer) or title substring; default frontmost"},
     "activate": {"type": "boolean", "default": true, "description": "false = background observe, no focus steal"},
-    "launch": {"type": "boolean", "default": false, "description": "true = open the app if not running"}
+    "launch": {"type": "boolean", "default": false, "description": "true = open the app if not running"},
+    "filter": {"type": "string", "description": "case-insensitive substring: only matching tree lines are shown (the full index registry stays targetable; re-query with find)"},
+    "include_screenshot": {"type": "boolean", "default": false, "description": "also attach the screenshot as MCP image content (downscaled), saving a separate file read"}
    },
    "required": ["app"]
   }
@@ -140,6 +142,43 @@ const toolsManifest = `[
     "action": {"type": "string", "description": "AX action name, e.g. AXPick"}
    },
    "required": ["element_index", "action"]
+  }
+ },
+ {
+  "name": "find",
+  "description": "Search the CURRENT capture's tree by text substring and/or role (e.g. AXButton) without re-capturing. Returns matching indexed lines; the indices are the same ones element actions take. Use after a get_app_state whose tree is large or was trimmed with ` + "`filter`" + `.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "text": {"type": "string", "description": "case-insensitive substring of the element line"},
+    "role": {"type": "string", "description": "exact AX role, e.g. AXButton, AXTextField"},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 200, "default": 40}
+   }
+  }
+ },
+ {
+  "name": "menu",
+  "description": "Read or drive the app's menu bar — where most macOS functionality lives, invisible to window captures. Without ` + "`path`" + `: list every menu and its items. With ` + "`path`" + ` (e.g. \"File > Export as PDF\u2026\", deeper submenus chain with more \" > \"): click that item. Titles are exact, including \u2026 and case.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "app": {"type": "string", "description": "app name (partial match ok)"},
+    "path": {"type": "string", "description": "menu > item path to click; omit to list"}
+   },
+   "required": ["app"]
+  }
+ },
+ {
+  "name": "wait_for",
+  "description": "Poll the captured window's accessibility tree until a text is present (default) or gone, then return — one call instead of an observe/not-ready-yet/observe loop. Times out with a structured wait_timeout error. On return the state is stale: get_app_state before the next element action.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "text": {"type": "string", "description": "case-insensitive substring to watch for"},
+    "until": {"type": "string", "enum": ["present", "gone"], "default": "present"},
+    "timeout_s": {"type": "number", "minimum": 1, "maximum": 60, "default": 10}
+   },
+   "required": ["text"]
   }
  }
 ]`

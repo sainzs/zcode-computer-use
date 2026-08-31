@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: cuu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cuu/go.mod
+          cache: false # stdlib-only module, nothing to cache
+      - run: go build -o bin/cuu .
+      - run: go vet ./...
+      # live-GUI cases self-skip when System Events is unreachable, so the
+      # golden protocol suite is what actually runs here
+      - run: go test ./...
+      - run: ./bin/cuu version

@@ -2,6 +2,44 @@
 
 All notable changes to `zcode-computer-use` are documented here.
 
+## 4.1.0 — 2026-08-31
+
+The turn-economy release: the metric behind every change is agent turns +
+tokens per completed GUI task. All additions are strictly additive — the
+v4.0 tool surface, payload shapes, and golden protocol behavior are
+unchanged.
+
+### Added
+
+- `menu` — read or drive the app's menu bar, where most macOS
+  functionality lives and which window captures cannot see. Without
+  `path`: list every menu with its items (separators skipped). With
+  `path` (`"File > Export as PDF…"`, deeper submenus chain with more
+  `" > "`): click that item. Menu titles pass through the same
+  AppleScript-escaping discipline as element addresses; a missing item is
+  a structured `menu_not_found` with the listing as its remedy.
+- `wait_for` — poll the captured window's AX tree until a text is
+  `present` (default) or `gone`, then return; a structured `wait_timeout`
+  otherwise. One call replaces the act → observe → "not ready yet" →
+  observe loop. Marks state stale on return: the tree it polled is not
+  the tree the indices came from.
+- `find` — re-query the current capture's registry by text substring
+  and/or exact AX role without touching the GUI; returns indexed lines
+  whose indices feed element actions directly.
+- `get_app_state` gains `filter` (case-insensitive substring; only
+  matching tree lines are shown while the full registry stays targetable)
+  and `include_screenshot` (attach the capture to the MCP response as an
+  image content block, downscaled to ≤1568px — image-rendering MCP
+  clients skip the file-read round trip; the CLI accepts and validates
+  both flags, inlining applies to the MCP surface).
+- CI on GitHub Actions (macOS runner: build, vet, golden suite) and a
+  tag-triggered release workflow that ships a prebuilt universal binary —
+  installing no longer requires a Go toolchain. The release job refuses a
+  tag that disagrees with `serverVersion`.
+- The Go test fixture is hermetic: spawned servers and CLI probes get an
+  isolated `ZCODE_CUA_DATA`, so a developer's real `state.json` can never
+  flip a `no_state` assertion.
+
 ## 4.0.0 — 2026-08-30
 
 The Python server is ported to Go: one static binary (`cuu`) with two

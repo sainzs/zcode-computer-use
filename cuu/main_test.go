@@ -2,7 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"image"
+	"image/png"
 	"io"
 	"os"
 	"os/exec"
@@ -32,6 +36,9 @@ func startServer(t *testing.T) *serverFixture {
 	t.Helper()
 	bin := buildBinary(t)
 	cmd := exec.Command(bin, "serve")
+	// hermetic data dir: the developer's real state.json must never flip a
+	// no_state assertion into stale_state
+	cmd.Env = append(os.Environ(), "ZCODE_CUA_DATA="+t.TempDir())
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -444,7 +451,9 @@ func TestCliVerbExitCodes(t *testing.T) {
 		t.Fatalf("unknown verb exit: %d", ee.ExitCode())
 	}
 	// a tool error prints the structured payload and exits 1
-	out, err = exec.Command(bin, "element_info", "--element_index", "3").CombinedOutput()
+	cliCmd := exec.Command(bin, "element_info", "--element_index", "3")
+	cliCmd.Env = append(os.Environ(), "ZCODE_CUA_DATA="+t.TempDir())
+	out, err = cliCmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("element_info without state must fail: %q", out)
 	}
@@ -587,6 +596,191 @@ func TestPyFloatStrGolden(t *testing.T) {
 		if got := pyFloatStr(in); got != want {
 			t.Fatalf("pyFloatStr(%v) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// ---------------------------------------------------------------- 4.1 tools
+
+func TestFindRequiresQueryAndState(t *testing.T) {
+	fx := startServer(t)
+	// neither text nor role -> invalid_args, checked before state
+	resp := fx.callTool(t, "find", nil)
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("code: %s", code)
+	}
+	// valid query but no capture yet -> no_state
+	resp = fx.callTool(t, "find", map[string]any{"text": "Save"})
+	if code := errCode(t, payloadOf(t, resp)); code != "no_state" {
+		t.Fatalf("code: %s", code)
+	}
+	// limit is strictly validated
+	resp = fx.callTool(t, "find", map[string]any{"text": "x", "limit": 0})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("limit 0 code: %s", code)
+	}
+}
+
+func TestMatchElementsGolden(t *testing.T) {
+	elements := map[int]treeEntry{
+		1: {Chain: "1", Body: `AXButton "Save Document" @px:1,2:3x4`},
+		2: {Chain: "2", Body: `AXTextField "name" v="save the whales"`},
+		3: {Chain: "3", Body: `AXButton "Cancel"`},
+		4: {Chain: "3.1", Body: `AXStaticText "Unsaved changes"`},
+	}
+	// text matches case-insensitively across the whole body
+	if got := matchElements(elements, "save", ""); len(got) != 3 ||
+		got[0] != 1 || got[1] != 2 || got[2] != 4 {
+		t.Fatalf("text match: %v", got)
+	}
+	// role must equal the leading token exactly
+	if got := matchElements(elements, "", "AXButton"); len(got) != 2 ||
+		got[0] != 1 || got[1] != 3 {
+		t.Fatalf("role match: %v", got)
+	}
+	// combined narrows
+	if got := matchElements(elements, "save", "AXButton"); len(got) != 1 || got[0] != 1 {
+		t.Fatalf("combined: %v", got)
+	}
+	// role is exact, not a prefix
+	if got := matchElements(elements, "", "AXText"); len(got) != 0 {
+		t.Fatalf("prefix must not match: %v", got)
+	}
+}
+
+func TestMenuPathGolden(t *testing.T) {
+	if _, terr := splitMenuPath("File"); terr == nil || terr.Code != "invalid_args" {
+		t.Fatalf("single segment must be rejected: %v", terr)
+	}
+	segs, terr := splitMenuPath(" File >  Export as PDF… ")
+	if terr != nil || len(segs) != 2 || segs[0] != "File" || segs[1] != "Export as PDF…" {
+		t.Fatalf("split: %v %v", segs, terr)
+	}
+	addr, terr := menuItemAddress([]string{"File", "Export", "PDF"})
+	if terr != nil {
+		t.Fatal(terr)
+	}
+	want := `menu item "PDF" of menu "Export" of menu item "Export" of ` +
+		`menu "File" of menu bar item "File" of menu bar 1`
+	if addr != want {
+		t.Fatalf("addr:\n got %s\nwant %s", addr, want)
+	}
+	// menu titles pass through asEsc — quotes cannot break the literal
+	addr, terr = menuItemAddress([]string{`Fi"le`, "Save"})
+	if terr != nil || !strings.Contains(addr, `menu bar item "Fi\"le"`) {
+		t.Fatalf("escaping: %s %v", addr, terr)
+	}
+}
+
+func TestMenuArgValidation(t *testing.T) {
+	fx := startServer(t)
+	resp := fx.callTool(t, "menu", nil)
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("code: %s", code)
+	}
+}
+
+func TestMenuUnknownAppIsStructured(t *testing.T) {
+	if !guiAvailable() {
+		t.Skip("System Events not reachable")
+	}
+	fx := startServer(t)
+	resp := fx.callTool(t, "menu", map[string]any{"app": "definitely not a real app 0xF00D"})
+	if code := errCode(t, payloadOf(t, resp)); code != "app_not_found" {
+		t.Fatalf("code: %s", code)
+	}
+}
+
+func TestWaitForValidation(t *testing.T) {
+	fx := startServer(t)
+	resp := fx.callTool(t, "wait_for", nil)
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("missing text: %s", code)
+	}
+	resp = fx.callTool(t, "wait_for", map[string]any{"text": "x", "until": "sideways"})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("bad until: %s", code)
+	}
+	resp = fx.callTool(t, "wait_for", map[string]any{"text": "x", "timeout_s": 999})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("bad timeout: %s", code)
+	}
+	// well-formed but nothing captured yet -> no_state, no GUI touched
+	resp = fx.callTool(t, "wait_for", map[string]any{"text": "x"})
+	if code := errCode(t, payloadOf(t, resp)); code != "no_state" {
+		t.Fatalf("no state: %s", code)
+	}
+}
+
+func TestGetAppStateNewArgsAreStrict(t *testing.T) {
+	fx := startServer(t)
+	// both new args are validated before any GUI work happens
+	resp := fx.callTool(t, "get_app_state", map[string]any{
+		"app": "TextEdit", "include_screenshot": "yes",
+	})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("include_screenshot: %s", code)
+	}
+	resp = fx.callTool(t, "get_app_state", map[string]any{
+		"app": "TextEdit", "filter": 7,
+	})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("filter: %s", code)
+	}
+}
+
+func TestDownscaleBoxGolden(t *testing.T) {
+	// a 3000x2000 image lands at the 1568 bound with the aspect kept
+	big := image.NewRGBA(image.Rect(0, 0, 3000, 2000))
+	out := downscaleBox(big, 1568)
+	if b := out.Bounds(); b.Dx() != 1568 || b.Dy() != 1045 {
+		t.Fatalf("bounds: %v", b)
+	}
+	// portrait scales on height
+	tall := image.NewRGBA(image.Rect(0, 0, 1000, 4000))
+	out = downscaleBox(tall, 1568)
+	if b := out.Bounds(); b.Dy() != 1568 || b.Dx() != 392 {
+		t.Fatalf("portrait bounds: %v", b)
+	}
+	// within-bound images pass through untouched
+	small := image.NewRGBA(image.Rect(0, 0, 640, 480))
+	if downscaleBox(small, 1568) != image.Image(small) {
+		t.Fatalf("small image must pass through")
+	}
+}
+
+func TestInlineScreenshotRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	shot := filepath.Join(dir, "shot.png")
+	f, err := os.Create(shot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 2000, 1200))); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	data := inlineScreenshot(shot)
+	if data == "" {
+		t.Fatal("expected base64 data")
+	}
+	raw, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		t.Fatalf("not base64: %v", err)
+	}
+	img, err := png.Decode(bytes.NewReader(raw))
+	if err != nil {
+		t.Fatalf("not a PNG: %v", err)
+	}
+	if b := img.Bounds(); b.Dx() != 1568 {
+		t.Fatalf("not downscaled: %v", b)
+	}
+	// inlining is best-effort: garbage input yields "", never an error
+	bad := filepath.Join(dir, "bad.png")
+	if err := os.WriteFile(bad, []byte("not a png"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if inlineScreenshot(bad) != "" {
+		t.Fatal("garbage must yield empty")
 	}
 }
 

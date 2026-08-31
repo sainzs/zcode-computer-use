@@ -1,0 +1,53 @@
+name: release
+
+# Tag vX.Y.Z -> GitHub release with a prebuilt universal binary, so users
+# need neither Go nor a build step: download, chmod +x, point mcpServers at
+# it. The tag must match cuu/runtime.go's serverVersion (checked below).
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cuu/go.mod
+          cache: false
+      - name: Verify tag matches serverVersion
+        run: |
+          want="${GITHUB_REF_NAME#v}"
+          have=$(grep -o 'serverVersion *= *"[^"]*"' cuu/runtime.go | grep -o '"[^"]*"$' | tr -d '"')
+          if [ "$want" != "$have" ]; then
+            echo "tag v$want != serverVersion $have" >&2
+            exit 1
+          fi
+      - name: Build universal binary
+        working-directory: cuu
+        run: |
+          CGO_ENABLED=0 GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o bin/cuu-arm64 .
+          CGO_ENABLED=0 GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o bin/cuu-amd64 .
+          lipo -create -output bin/cuu bin/cuu-arm64 bin/cuu-amd64
+          ./bin/cuu version
+      - name: Run tests
+        working-directory: cuu
+        run: go test ./...
+      - name: Package
+        run: |
+          mkdir -p dist/zcode-computer-use
+          cp cuu/bin/cuu README.md LICENSE CHANGELOG.md dist/zcode-computer-use/
+          tar -czf "dist/cuu-${GITHUB_REF_NAME}-macos-universal.tar.gz" -C dist zcode-computer-use
+          (cd dist && shasum -a 256 "cuu-${GITHUB_REF_NAME}-macos-universal.tar.gz" > checksums.txt)
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/cuu-*.tar.gz
+            dist/checksums.txt
+          generate_release_notes: true

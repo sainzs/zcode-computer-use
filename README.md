@@ -1,10 +1,17 @@
 # zcode-computer-use
 
-macOS computer control for ZCode — a single static Go binary that gives an
-agent eyes and hands on native apps: per-window screenshots, an indexed
-accessibility tree with diff markers, element-first actions with
-screenshot-pixel fallback, background observe, verified text selection, and
-four-way scrolling.
+macOS computer control for ZCode (or any MCP client) — a single static Go
+binary that gives an agent eyes and hands on native apps: per-window
+screenshots, an indexed accessibility tree with diff markers, element-first
+actions with screenshot-pixel fallback, menu-bar driving, condition waiting,
+background observe, verified text selection, and four-way scrolling.
+
+The design metric is **agent turns and tokens per completed task**: trees
+carry diff markers so one re-observe tells the agent what changed, `filter`
+and `find` keep 350-element trees out of the context window, `wait_for`
+replaces observe-poll loops with one call, and `include_screenshot` returns
+the capture as MCP image content so image-rendering clients skip a file-read
+round trip.
 
 One binary, two surfaces, one state file:
 
@@ -29,13 +36,19 @@ Go port reproduces its protocol byte-for-byte, including the golden tests
 | Focus | background observe (`activate:false`) never steals focus | usually activates |
 | Launching | never auto-launches without `launch:true` | often does |
 | Scroll | verified 4-way wheel events (session-tap + pixel units) | often vertical-only, unverified |
+| Menu bar | list + click by path (`"File > Export as PDF…"`) | usually unreachable |
+| Waiting | `wait_for` text present/gone, structured timeout | re-observe loops |
 | Text selection | content-verified with keyboard fallback | rare |
 | Auditability | JSONL log, permission-aware selftest, golden protocol tests | — |
 
 ## Install
 
-Build once (the manifest points at the built binary, which is not tracked
-in git):
+Prebuilt: every tagged release ships a universal macOS binary — download
+`cuu-vX.Y.Z-macos-universal.tar.gz` from the releases page, unpack, and
+point `mcpServers` at it (no Go toolchain needed).
+
+From source (the plugin manifest points at the built binary, which is not
+tracked in git):
 
 ```bash
 cd cuu
@@ -95,6 +108,22 @@ cuu/bin/cuu selftest
    the next element action. The diff markers tell you exactly what your
    action changed.
 
+Four tools cut turns and tokens around that loop:
+
+- `menu(app)` lists the menu bar (where most macOS functionality lives,
+  invisible to window captures); `menu(app, path: "File > Export as
+  PDF…")` clicks an item — deeper submenus chain with more `" > "`, and a
+  missing item is a structured `menu_not_found`.
+- `wait_for(text, until: present|gone, timeout_s)` polls the captured
+  window's tree until the condition holds — one call instead of an
+  observe/not-ready/observe loop; times out as `wait_timeout`.
+- `get_app_state(filter: "Save")` shows only matching tree lines while the
+  full index registry stays targetable; `find(text?, role?)` re-queries the
+  current capture with a different lens without touching the GUI.
+- `get_app_state(include_screenshot: true)` attaches the capture to the MCP
+  response as image content (downscaled to ≤1568px) — clients that render
+  images skip the separate file read.
+
 `select_text` returns the selected text plus the method that worked
 (`ax_range` or `keyboard`) — the selection is verified against element
 content, not trusted. `type_text` defaults to a clipboard paste (saved and
@@ -148,7 +177,8 @@ System Events is unreachable.
 - macOS only (System Events / CGWindowList / cliclick stack).
 - The frontmost window is the default target; apps exposing huge AX trees
   are bounded by `depth` (0–12) and a 350-element cap.
-- `select_text` keyboard fallback caps at 400 characters.
+- `select_text` keyboard fallback caps at 400 characters; `wait_for` polls
+  text in the AX tree, not pixels.
 - Without Screen Recording you get a full-screen capture where
   multi-display coordinates are approximate.
 - Scroll needs Apple's `/usr/bin/python3` (pyobjc); Homebrew-only setups

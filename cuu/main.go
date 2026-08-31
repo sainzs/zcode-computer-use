@@ -241,6 +241,12 @@ func runTool(name string, st *serverState, a args) (any, *ToolError) {
 		return toolElementInfo(st, a)
 	case "perform_action", "perform_secondary_action":
 		return toolPerformAction(st, a)
+	case "find":
+		return toolFind(st, a)
+	case "menu":
+		return toolMenu(st, a)
+	case "wait_for":
+		return toolWaitFor(st, a)
 	default:
 		return nil, toolErr("internal", "no handler for "+name, "")
 	}
@@ -251,7 +257,7 @@ func runTool(name string, st *serverState, a args) (any, *ToolError) {
 var cliVerbs = map[string]cliTool{
 	"list_apps":      {tool: "list_apps"},
 	"list_windows":   {tool: "list_windows", flags: []string{"app"}},
-	"get_app_state":  {tool: "get_app_state", flags: []string{"app", "i:depth", "window", "b:activate", "b:launch"}},
+	"get_app_state":  {tool: "get_app_state", flags: []string{"app", "i:depth", "window", "b:activate", "b:launch", "filter", "b:include_screenshot"}},
 	"click":          {tool: "click", flags: []string{"i:element_index", "n:x", "n:y", "mouse_button", "i:click_count"}},
 	"type_text":      {tool: "type_text", flags: []string{"text", "method"}},
 	"press_key":      {tool: "press_key", flags: []string{"key"}},
@@ -261,4 +267,7 @@ var cliVerbs = map[string]cliTool{
 	"select_text":    {tool: "select_text", flags: []string{"i:element_index", "i:start", "i:length"}},
 	"element_info":   {tool: "element_info", flags: []string{"i:element_index"}},
 	"perform_action": {tool: "perform_action", flags: []string{"i:element_index", "action"}},
+	"find":           {tool: "find", flags: []string{"text", "role", "i:limit"}},
+	"menu":           {tool: "menu", flags: []string{"app", "path"}},
+	"wait_for":       {tool: "wait_for", flags: []string{"text", "until", "n:timeout_s"}},
 }

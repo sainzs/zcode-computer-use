@@ -138,6 +138,15 @@ func toolGetAppState(st *serverState, a args) (any, *ToolError) {
 	if terr != nil {
 		return nil, terr
 	}
+	filter, terr := argStr(a, "filter", false)
+	if terr != nil {
+		return nil, terr
+	}
+	// validated here so both surfaces reject bad types; the MCP layer is
+	// what actually attaches the image content block
+	if _, terr := argBool(a, "include_screenshot", false); terr != nil {
+		return nil, terr
+	}
 
 	name := resolveApp(app)
 	if name == "" {
@@ -323,9 +332,13 @@ func toolGetAppState(st *serverState, a args) (any, *ToolError) {
 		} else {
 			registry = parsed.Registry
 			counts, marked := diffTree(st, registry, name, i64_or_zero(winID))
+			filterLow := strings.ToLower(filter)
 			for _, idx := range sortedIndices(registry) {
 				entry := registry[idx]
 				m := marked[idx]
+				if filterLow != "" && !strings.Contains(strings.ToLower(m[1]), filterLow) {
+					continue
+				}
 				treeLines = append(treeLines,
 					fmt.Sprintf("[%s%d] %s @@%s", m[0], idx, m[1], entry.Chain))
 			}
@@ -334,6 +347,13 @@ func toolGetAppState(st *serverState, a args) (any, *ToolError) {
 				"%d gone", len(registry), depth, counts.New, counts.Changed, counts.Gone)
 			if counts.FirstCapture {
 				treeNote += " (first capture)"
+			}
+			if filter != "" {
+				// the full registry is still live — filter trims what is
+				// SHOWN, never what is targetable; find widens the view later
+				treeNote += fmt.Sprintf("; filter %q shows %d line(s) "+
+					"(all %d indices stay targetable — use find to re-query)",
+					filter, len(treeLines), len(registry))
 			}
 		}
 	}
