@@ -249,6 +249,8 @@ func runTool(name string, st *serverState, a args) (any, *ToolError) {
 		return toolWaitFor(st, a)
 	case "clipboard":
 		return toolClipboard(a)
+	case "window":
+		return toolWindow(st, a)
 	default:
 		return nil, toolErr("internal", "no handler for "+name, "")
 	}
@@ -273,4 +275,5 @@ var cliVerbs = map[string]cliTool{
 	"menu":           {tool: "menu", flags: []string{"app", "path"}},
 	"wait_for":       {tool: "wait_for", flags: []string{"text", "until", "n:timeout_s"}},
 	"clipboard":      {tool: "clipboard", flags: []string{"text"}},
+	"window":         {tool: "window", flags: []string{"app", "window", "action", "n:x", "n:y", "n:width", "n:height"}},
 }

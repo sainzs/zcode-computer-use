@@ -190,5 +190,22 @@ const toolsManifest = `[
     "text": {"type": "string", "description": "text to place on the clipboard; omit to read"}
    }
   }
+ },
+ {
+  "name": "window",
+  "description": "Move, resize, minimize, unminimize, zoom, or close an app window — no pixel-hunting. Coordinates are screen points, not screenshot pixels; no capture is involved. ` + "`window`" + ` targets a specific window by id or title substring (default frontmost). ` + "`close`" + ` may prompt the app to save unsaved changes. ` + "`unminimize`" + ` targets minimized windows by title substring or first-minimized — they have no CGWindow id while off-screen.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "app": {"type": "string", "description": "app name (partial match ok)"},
+    "window": {"description": "window id (integer) or title substring; default frontmost"},
+    "action": {"type": "string", "enum": ["move", "resize", "minimize", "unminimize", "zoom", "close"], "description": "what to do with the window"},
+    "x": {"type": "number", "description": "screen points — new left edge (move only)"},
+    "y": {"type": "number", "description": "screen points — new top edge (move only)"},
+    "width": {"type": "number", "description": "screen points — new width (resize only)"},
+    "height": {"type": "number", "description": "screen points — new height (resize only)"}
+   },
+   "required": ["app", "action"]
+  }
  }
 ]`

@@ -759,6 +759,68 @@ func TestClipboardRoundTripLive(t *testing.T) {
 	}
 }
 
+func TestWindowArgValidation(t *testing.T) {
+	fx := startServer(t)
+	// missing action -> invalid_args, checked before any GUI work
+	resp := fx.callTool(t, "window", map[string]any{"app": "TextEdit"})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("missing action: %s", code)
+	}
+	// unknown action -> invalid_args
+	resp = fx.callTool(t, "window", map[string]any{"app": "TextEdit", "action": "teleport"})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("unknown action: %s", code)
+	}
+	// move without x/y -> invalid_args (coordinate validation precedes
+	// resolveApp, so it never needs a running app)
+	resp = fx.callTool(t, "window", map[string]any{"app": "TextEdit", "action": "move"})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("move without x/y: %s", code)
+	}
+	resp = fx.callTool(t, "window", map[string]any{"app": "TextEdit", "action": "move", "x": 10})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("move without y: %s", code)
+	}
+	resp = fx.callTool(t, "window", map[string]any{"app": "TextEdit", "action": "resize"})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("resize without width/height: %s", code)
+	}
+}
+
+func TestMinimizedWindowSrcGolden(t *testing.T) {
+	// no window arg -> first minimized window
+	src, terr := minimizedWindowSrc("TextEdit", nil, false)
+	if terr != nil || !strings.Contains(src, `"AXMinimized" is true)`) {
+		t.Fatalf("default: %s %v", src, terr)
+	}
+	// title substring narrows, escaped
+	src, terr = minimizedWindowSrc("TextEdit", `no"tes`, true)
+	if terr != nil || !strings.Contains(src, `name contains "no\"tes"`) {
+		t.Fatalf("title: %s %v", src, terr)
+	}
+	// a CGWindow id cannot address an off-screen window — rejected, not guessed
+	if _, terr := minimizedWindowSrc("TextEdit", json.Number("42"), true); terr == nil ||
+		terr.Code != "invalid_args" {
+		t.Fatalf("id must be rejected: %v", terr)
+	}
+}
+
+func TestWindowUnknownAppIsStructured(t *testing.T) {
+	if !guiAvailable() {
+		t.Skip("System Events not reachable")
+	}
+	fx := startServer(t)
+	resp := fx.callTool(t, "window", map[string]any{
+		"app": "definitely not a real app 0xF00D", "action": "minimize",
+	})
+	if resp["result"].(map[string]any)["isError"] != true {
+		t.Fatalf("expected isError: %v", resp)
+	}
+	if code := errCode(t, payloadOf(t, resp)); code != "app_not_found" {
+		t.Fatalf("code: %s", code)
+	}
+}
+
 func TestGetAppStateNewArgsAreStrict(t *testing.T) {
 	fx := startServer(t)
 	// both new args are validated before any GUI work happens
