@@ -121,9 +121,14 @@ func toolOCR(st *serverState, a args) (any, *ToolError) {
 			break
 		}
 	}
+	hint := "coordinates are screenshot pixels — click x/y works on the box centers"
+	if st.Stale {
+		hint = "screenshot predates the last action — get_app_state for " +
+			"fresh pixels before clicking these coordinates"
+	}
 	return ocrPayload{
 		Result: fmt.Sprintf("%d text region(s)", len(lines)),
 		Lines:  lines,
-		Hint:   "coordinates are screenshot pixels — click x/y works on the box centers",
+		Hint:   hint,
 	}, nil
 }

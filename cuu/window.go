@@ -154,9 +154,20 @@ func toolWindow(st *serverState, a args) (any, *ToolError) {
 		if terr != nil {
 			return nil, terr
 		}
-		winSrc, _, terr = seWindowSrc(name, cgWin)
+		var matched bool
+		winSrc, matched, terr = seWindowSrc(name, cgWin)
 		if terr != nil {
 			return nil, terr
+		}
+		// get_app_state proceeds on a mismatch with a header note — an OBSERVE
+		// can afford that. An action cannot: silently closing or resizing
+		// "window 1" instead of the addressed window is exactly the kind of
+		// surprise this server exists to prevent.
+		if !matched {
+			return nil, toolErr("window_mismatch",
+				"System Events could not address that exact window",
+				"retry with the exact title from list_windows, or omit "+
+					"window to act on the frontmost one")
 		}
 	}
 

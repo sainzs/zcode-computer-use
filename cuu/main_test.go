@@ -764,6 +764,20 @@ func TestClipboardRoundTripLive(t *testing.T) {
 	if payload["text"] != "cuu-test-123" {
 		t.Fatalf("read-back: %v", payload["text"])
 	}
+	// an explicit "" clears — it must not fall through to a read
+	resp = fx.callTool(t, "clipboard", map[string]any{"text": ""})
+	if got := payloadOf(t, resp)["result"]; got != "Clipboard cleared." {
+		t.Fatalf("clear payload: %v", got)
+	}
+	resp = fx.callTool(t, "clipboard", nil)
+	payload = payloadOf(t, resp)
+	if payload["text"] != "" {
+		t.Fatalf("after clear: %v", payload["text"])
+	}
+	// and the empty-string clipboard must not be mislabeled as non-text
+	if hint, _ := payload["hint"].(string); strings.Contains(hint, "non-text") {
+		t.Fatalf("empty string mislabeled: %v", hint)
+	}
 }
 
 func TestWindowArgValidation(t *testing.T) {

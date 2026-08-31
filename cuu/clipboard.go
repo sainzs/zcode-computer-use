@@ -20,16 +20,28 @@ type clipboardReadPayload struct {
 }
 
 func toolClipboard(a args) (any, *ToolError) {
-	text, terr := argStr(a, "text", false)
-	if terr != nil {
-		return nil, terr
+	// presence of `text` selects the verb — an explicit "" must CLEAR the
+	// clipboard, not silently fall through to a read
+	rawText, hasText := a.raw("text")
+	setting := hasText && rawText != nil
+	text := ""
+	if setting {
+		s, isStr := rawText.(string)
+		if !isStr {
+			return nil, toolErr("invalid_args", "text must be a string",
+				fmt.Sprintf("got %s", pyRepr(rawText)))
+		}
+		text = s
 	}
-	if text != "" {
+	if setting {
 		res := runCmd(10*time.Second, text, "pbcopy")
 		if res == nil || res.ExitCode != 0 {
 			return nil, toolErr("internal", "pbcopy failed — clipboard not set",
 				"retry; if it persists check disk space and "+
 					"/usr/bin/pbcopy permissions")
+		}
+		if text == "" {
+			return messagePayload{Result: "Clipboard cleared."}, nil
 		}
 		return messagePayload{
 			Result: fmt.Sprintf("Clipboard set to %d character(s).", len([]rune(text))),
@@ -49,7 +61,12 @@ func toolClipboard(a args) (any, *ToolError) {
 		types := runCmd(10*time.Second, "", "osascript", "-e", "return (clipboard info) as text")
 		if types != nil {
 			t := strings.TrimSpace(types.Stdout)
-			if t != "" && t != "0" {
+			// an empty STRING on the clipboard still lists text classes
+			// («class utf8», string) in clipboard info — only call it
+			// non-text when no text class is present at all
+			low := strings.ToLower(t)
+			if t != "" && t != "0" && !strings.Contains(low, "utf8") &&
+				!strings.Contains(low, "string") {
 				hint = "clipboard holds non-text content (image or file list); pbpaste returned nothing"
 			}
 		}
