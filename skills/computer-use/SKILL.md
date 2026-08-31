@@ -63,6 +63,13 @@ the exact missing grant. (Build first if the binary is missing:
 - **Skip the file read when the host renders images**:
   `get_app_state(include_screenshot: true)` attaches the capture as MCP
   image content (downscaled). In ZCode reading the PNG path also works.
+- **No AX tree? OCR the screenshot**: `ocr(filter?)` returns Vision text
+  regions in screenshot pixels — click their centers with `click x/y`. Use
+  it for Electron apps, canvases, and games where the tree is empty.
+- **Manage windows without pixel-hunting**: `window(app, action: move |
+  resize | minimize | unminimize | zoom | close, …)` in screen points;
+  `clipboard(text?)` reads/sets/clears the pasteboard explicitly (seed a
+  paste, or inspect what the owner copied — treat it as his private data).
 
 v3 specifics worth reaching for:
 

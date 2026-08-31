@@ -4,8 +4,10 @@
 > indexed accessibility tree with diff markers, element-first actions (AXPress)
 > with screenshot-pixel fallback, menu-bar listing and path clicking,
 > condition waiting (wait_for), tree re-query without recapture (find/filter),
-> optional inline MCP image content, background observation, content-verified
-> text selection, and verified 4-way scroll.
+> OCR fallback via Apple Vision (click-ready screenshot-pixel boxes), window
+> management in screen points, explicit clipboard read/set, optional inline
+> MCP image content, background observation, content-verified text selection,
+> and verified 4-way scroll.
 
 - Install: build once (`cd cuu && go build -o bin/cuu .`), then copy the `mcpServers` JSON from README.md § Install into your MCP client config (`command`: `.../cuu/bin/cuu`, `args`: `["serve"]`)
 - Requirements: macOS; Go 1.25+ to build; cliclick (`brew install cliclick`); Accessibility + Screen Recording grants for the host app; scroll uses Apple's bundled /usr/bin/python3 (pyobjc via Xcode CLT) — no other Python at runtime

@@ -15,7 +15,7 @@ import (
 
 const (
 	serverName         = "zcode-computer-use"
-	serverVersion      = "4.1.0"
+	serverVersion      = "4.2.0"
 	supportedProtocol1 = "2025-03-26"
 	supportedProtocol2 = "2025-06-18"
 	latestProtocol     = supportedProtocol2

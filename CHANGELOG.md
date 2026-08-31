@@ -2,6 +2,34 @@
 
 All notable changes to `zcode-computer-use` are documented here.
 
+## 4.2.0 — 2026-08-31
+
+The capability wave, executed by a prewalked plan
+(`stencil-figure-lab/plans/zcode-computer-use-v4.2.md`): commodity-model
+workers (Qwen3.8-Flash, DeepSeek-v4-pro, GLM-5.3-flash) each built one node
+against the v4.1 tool-addition pattern; a cross-family critic reviewed the
+wave. Strictly additive.
+
+### Added
+
+- `ocr` — Apple Vision text recognition over the CURRENT screenshot, the
+  fallback for apps with no usable AX tree (Electron, canvases, games).
+  Runs through the same osascript stack via a JXA ObjC bridge (~0.3s,
+  zero new dependencies); normalized bottom-left Vision boxes come back as
+  top-left screenshot pixels, so `click x/y` works on them directly.
+  Optional `filter` substring; warns when the screenshot predates the
+  last action.
+- `window` — move/resize/minimize/unminimize/zoom/close in screen points,
+  addressed by the same app/window resolution chain as `get_app_state`.
+  A CG↔SE window-address mismatch is a structured refusal, never a silent
+  "window 1" fallback; `unminimize` addresses minimized windows through
+  System Events directly (they have no CGWindowList entry while
+  off-screen).
+- `clipboard` — explicit pasteboard read/set (previously only touched
+  implicitly by `type_text`). Presence of `text` selects the verb: `""`
+  clears; reads distinguish an empty string from non-text content
+  (image/files) honestly.
+
 ## 4.1.0 — 2026-08-31
 
 The turn-economy release: the metric behind every change is agent turns +

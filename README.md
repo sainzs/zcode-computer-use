@@ -4,6 +4,7 @@ macOS computer control for ZCode (or any MCP client) — a single static Go
 binary that gives an agent eyes and hands on native apps: per-window
 screenshots, an indexed accessibility tree with diff markers, element-first
 actions with screenshot-pixel fallback, menu-bar driving, condition waiting,
+OCR fallback via Apple Vision, window management, explicit clipboard access,
 background observe, verified text selection, and four-way scrolling.
 
 The design metric is **agent turns and tokens per completed task**: trees
@@ -38,6 +39,7 @@ Go port reproduces its protocol byte-for-byte, including the golden tests
 | Scroll | verified 4-way wheel events (session-tap + pixel units) | often vertical-only, unverified |
 | Menu bar | list + click by path (`"File > Export as PDF…"`) | usually unreachable |
 | Waiting | `wait_for` text present/gone, structured timeout | re-observe loops |
+| No AX tree | `ocr` — Vision text regions in click-ready screenshot pixels | stuck |
 | Text selection | content-verified with keyboard fallback | rare |
 | Auditability | JSONL log, permission-aware selftest, golden protocol tests | — |
 
@@ -123,6 +125,18 @@ Four tools cut turns and tokens around that loop:
 - `get_app_state(include_screenshot: true)` attaches the capture to the MCP
   response as image content (downscaled to ≤1568px) — clients that render
   images skip the separate file read.
+
+And three capability tools round out the surface:
+
+- `ocr(filter?)` reads text out of the current screenshot via Apple Vision
+  (same osascript stack, no new dependencies) — the fallback when an app
+  exposes no usable AX tree. Boxes come back in screenshot pixels, so
+  `click x/y` works on them directly.
+- `window(app, action, …)` moves/resizes/minimizes/unminimizes/zooms/closes
+  a window in screen points; an ambiguous window address is a structured
+  refusal, never a silent fallback.
+- `clipboard(text?)` reads or sets the pasteboard explicitly (`""` clears);
+  non-text content is reported honestly instead of as an empty string.
 
 `select_text` returns the selected text plus the method that worked
 (`ax_range` or `keyboard`) — the selection is verified against element

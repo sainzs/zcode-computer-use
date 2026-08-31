@@ -395,6 +395,9 @@ not by brittle index</div>
           <div class="cat-row"><span class="cat-tool">menu<span class="chip">V4.1</span></span><span class="cat-kind">observe+act</span><span class="cat-sig">(app, path?)</span><div class="cov"><span class="bar"><i style="width:90%"></i></span><span class="lbl">live listing · protocol</span></div></div>
           <div class="cat-row"><span class="cat-tool">wait_for<span class="chip">V4.1</span></span><span class="cat-kind">observe</span><span class="cat-sig">(text, until?, timeout_s?)</span><div class="cov"><span class="bar"><i style="width:80%"></i></span><span class="lbl">protocol · validation goldens</span></div></div>
           <div class="cat-row"><span class="cat-tool">find<span class="chip">V4.1</span></span><span class="cat-kind">inspect</span><span class="cat-sig">(text?, role?, limit?)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">match goldens · protocol</span></div></div>
+          <div class="cat-row"><span class="cat-tool">ocr<span class="chip">V4.2</span></span><span class="cat-kind">observe</span><span class="cat-sig">(filter?)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">live Vision · box goldens</span></div></div>
+          <div class="cat-row"><span class="cat-tool">window<span class="chip">V4.2</span></span><span class="cat-kind">act</span><span class="cat-sig">(app, action, window?, x?, y?, width?, height?)</span><div class="cov"><span class="bar"><i style="width:80%"></i></span><span class="lbl">protocol · validation goldens</span></div></div>
+          <div class="cat-row"><span class="cat-tool">clipboard<span class="chip">V4.2</span></span><span class="cat-kind">act</span><span class="cat-sig">(text?)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">live round trip · protocol</span></div></div>
         </div>
       </div>
       <p class="micro">coverage bars are literal: which suites drove each tool. v4 keeps the evidence
@@ -430,13 +433,13 @@ not by brittle index</div>
       <div class="cmp">
         <div class="row head"><span></span><span>zcode-computer-use</span><span>typical alternative</span></div>
         <div class="row"><span class="a">Install surface</span><span class="b">one static Go binary, zero runtime deps</span><span class="c">runtime + package graph</span></div>
-        <div class="row"><span class="a">Auditability</span><span class="b">whole driver ~3,900 lines of Go</span><span class="c">trust the bundle</span></div>
+        <div class="row"><span class="a">Auditability</span><span class="b">whole driver ~4,400 lines of Go</span><span class="c">trust the bundle</span></div>
         <div class="row"><span class="a">Tree hygiene</span><span class="b">forced re-fetch, anti-forgery, diff markers</span><span class="c">varies</span></div>
         <div class="row"><span class="a">Errors</span><span class="b">structured {code, message, remedy}</span><span class="c">prose strings</span></div>
         <div class="row"><span class="a">Focus</span><span class="b">observe without stealing focus</span><span class="c">usually activates</span></div>
         <div class="row"><span class="a">Scroll</span><span class="b">4-way, verified, session-tap recipe</span><span class="c">often vertical-only, unverified</span></div>
         <div class="row"><span class="a">Text selection</span><span class="b">content-verified + keyboard fallback</span><span class="c">rare</span></div>
-        <div class="row"><span class="a">Tests</span><span class="b">36 go goldens + 21 protocol + 31-check live E2E</span><span class="c">—</span></div>
+        <div class="row"><span class="a">Tests</span><span class="b">44 go goldens + 21 protocol + 31-check live E2E</span><span class="c">—</span></div>
       </div>
       <p class="micro">the pitch isn't more features — it's one auditable binary with the traps written down:
       <b>HID-tap wheel-event drops</b> · <b>apps that ignore scripted selection writes</b> · <b>JXA CFRelease segfaults</b></p>

@@ -4,8 +4,9 @@ macOS computer control for ZCode: one static Go binary (`cuu`) — MCP-over-stdi
 server (`cuu serve`) plus a CLI with one JSON-printing verb per tool. Per-window
 screenshots, indexed AX tree with diff markers, element-first actions with
 screenshot-pixel fallback, menu-bar drive, condition waiting, tree re-query
-(find/filter), optional inline MCP image content, background observe,
-verified text selection, 4-way scroll. Extracted from `liminal-void/plugins/zcode-computer-use` on 2026-08-31
+(find/filter), Vision OCR fallback, window management, explicit clipboard,
+optional inline MCP image content, background observe, verified text
+selection, 4-way scroll. Extracted from `liminal-void/plugins/zcode-computer-use` on 2026-08-31
 (history preserved via `git subtree split`); the v3 Python server stays under
 `mcp/_legacy/` with its golden suites in `tests/_legacy/` for provenance.
 
@@ -44,7 +45,7 @@ python3 tests/_legacy/e2e_textedit.py               # live TextEdit drive (GUI)
 ```
 
 The Go suite speaks raw JSON-RPC to a spawned `cuu serve`; live-GUI cases
-self-skip headless. Last full-green rehearsal: 2026-08-31, v4.1.0 (36 go
+self-skip headless. Last full-green rehearsal: 2026-08-31, v4.2.0 (44 go
 tests ok, 21/21 protocol, selftest 6/6). CI mirrors the Go gate on every
 push (`.github/workflows/ci.yml`); tagging `vX.Y.Z` builds a universal-binary
 release and refuses a tag that disagrees with `serverVersion`.
