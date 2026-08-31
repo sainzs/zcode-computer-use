@@ -24,14 +24,14 @@ scroll. Extracted from `liminal-void/plugins/zcode-computer-use` on 2026-08-31
 
 ## Public repo
 
-`origin` = **github.com/sainzs/zcode-computer-use** — public since 2026-08-27,
-v3.0.1 (Python era, tip `2fb5f49`), Pages site live from its `docs/` (which is
-byte-identical to this repo's salvaged `docs/`). Local `main` (v4, Go) descends
-from the liminal-void subtree split, an unrelated git lineage; the public tip
-is held locally as `archive/v3-public`. Pushing v4 means force-pushing `main`
-plus pushing `archive/v3-public` — owner-gated, and needs `gh auth login`
-first (the keyring auth live on 2026-08-27 has died). Never force-push before
-the archive branch exists upstream.
+`origin` = **github.com/sainzs/zcode-computer-use** — public since 2026-08-27.
+**v4 (Go) is live on `main` since 2026-08-31** (tip `453486b`, force-pushed
+over the unrelated Python lineage); the outgoing v3.0.1 public tip (`2fb5f49`)
+is preserved as `archive/v3-public`, local + remote. Pages serves `docs/` off
+`main`. Auth: `gh` CLI can show unauthenticated while plain `git push` still
+works via the osxkeychain credential helper — try git first before assuming
+`gh auth login` is needed. Standing rule for any future lineage change:
+preserve the outgoing tip on an archive branch upstream before force-pushing.
 
 ## Verify
 
