@@ -22,6 +22,17 @@ scroll. Extracted from `liminal-void/plugins/zcode-computer-use` on 2026-08-31
   `/usr/bin/python3` in ≤120px chunks; axis2 negative = right. Don't "simplify"
   this; it is the verified recipe.
 
+## Public repo
+
+`origin` = **github.com/sainzs/zcode-computer-use** — public since 2026-08-27,
+v3.0.1 (Python era, tip `2fb5f49`), Pages site live from its `docs/` (which is
+byte-identical to this repo's salvaged `docs/`). Local `main` (v4, Go) descends
+from the liminal-void subtree split, an unrelated git lineage; the public tip
+is held locally as `archive/v3-public`. Pushing v4 means force-pushing `main`
+plus pushing `archive/v3-public` — owner-gated, and needs `gh auth login`
+first (the keyring auth live on 2026-08-27 has died). Never force-push before
+the archive branch exists upstream.
+
 ## Verify
 
 ```bash
