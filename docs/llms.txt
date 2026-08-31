@@ -1,11 +1,12 @@
-> zcode-computer-use is a single-file, stdlib-only Model Context Protocol (MCP)
-> server that gives AI coding agents computer control on macOS: per-window
-> screenshots, an indexed accessibility tree with diff markers, element-first
-> actions (AXPress) with screenshot-pixel fallback, background observation,
-> content-verified text selection, and verified 4-way scroll.
+> zcode-computer-use is a single static Go binary (`cuu`) that gives AI coding
+> agents computer control on macOS: an MCP-over-stdio server (`cuu serve`)
+> plus a CLI with one JSON-printing verb per tool. Per-window screenshots, an
+> indexed accessibility tree with diff markers, element-first actions (AXPress)
+> with screenshot-pixel fallback, background observation, content-verified text
+> selection, and verified 4-way scroll.
 
-- Install: copy the `mcpServers` JSON from README.md § Install into your MCP client config
-- Requirements: macOS, Python 3.9+, cliclick (`brew install cliclick`), Accessibility + Screen Recording grants for the host app; scroll uses Apple's bundled /usr/bin/python3 (pyobjc via Xcode CLT)
-- Verify: `python3 tests/test_protocol.py` (headless-safe) · `python3 tests/e2e_textedit.py` (live) · `python3 mcp/server.py selftest`
+- Install: build once (`cd cuu && go build -o bin/cuu .`), then copy the `mcpServers` JSON from README.md § Install into your MCP client config (`command`: `.../cuu/bin/cuu`, `args`: `["serve"]`)
+- Requirements: macOS; Go 1.25+ to build; cliclick (`brew install cliclick`); Accessibility + Screen Recording grants for the host app; scroll uses Apple's bundled /usr/bin/python3 (pyobjc via Xcode CLT) — no other Python at runtime
+- Verify: `cd cuu && go test ./...` (golden protocol suite) · `cuu/bin/cuu selftest` (deps + permissions preflight) · legacy v3 suites under `tests/_legacy/` (21 protocol, headless-safe; 31-check live TextEdit E2E)
 - Key traps documented: HID-tap wheel events are silently dropped (use kCGSessionEventTap + pixel units); TextEdit ignores scripted AXSelectedTextRange writes (keyboard-walk fallback); CFRelease segfaults in JXA
 - License: MIT
