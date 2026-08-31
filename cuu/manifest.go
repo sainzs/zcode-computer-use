@@ -180,5 +180,15 @@ const toolsManifest = `[
    },
    "required": ["text"]
   }
+ },
+ {
+  "name": "clipboard",
+  "description": "Read or set the system clipboard explicitly. Without ` + "`text`" + `: return the clipboard's plain-text content (empty ` + "`text`" + ` plus a hint when it holds non-text content like an image). With ` + "`text`" + `: set the clipboard to it.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "text": {"type": "string", "description": "text to place on the clipboard; omit to read"}
+   }
+  }
  }
 ]`

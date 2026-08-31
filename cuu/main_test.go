@@ -718,6 +718,47 @@ func TestWaitForValidation(t *testing.T) {
 	}
 }
 
+func TestClipboardWrongArgTypeIsInvalid(t *testing.T) {
+	fx := startServer(t)
+	resp := fx.callTool(t, "clipboard", map[string]any{"text": 42})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("code: %s", code)
+	}
+	resp = fx.callTool(t, "clipboard", map[string]any{"text": true})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("code: %s", code)
+	}
+}
+
+func TestClipboardRoundTripLive(t *testing.T) {
+	if !guiAvailable() {
+		t.Skip("System Events not reachable")
+	}
+	// save the human's clipboard, exercise set → read, put it back
+	saved, err := exec.Command("pbpaste", "-Prefer", "txt").Output()
+	if err != nil {
+		t.Skipf("pbpaste unavailable: %v", err)
+	}
+	t.Cleanup(func() {
+		cmd := exec.Command("pbcopy")
+		cmd.Stdin = bytes.NewReader(saved)
+		_ = cmd.Run()
+	})
+	fx := startServer(t)
+	resp := fx.callTool(t, "clipboard", map[string]any{"text": "cuu-test-123"})
+	if resp["result"].(map[string]any)["isError"] == true {
+		t.Fatalf("clipboard set failed: %v", resp)
+	}
+	if got := payloadOf(t, resp)["result"]; got != "Clipboard set to 12 character(s)." {
+		t.Fatalf("set payload: %v", got)
+	}
+	resp = fx.callTool(t, "clipboard", nil)
+	payload := payloadOf(t, resp)
+	if payload["text"] != "cuu-test-123" {
+		t.Fatalf("read-back: %v", payload["text"])
+	}
+}
+
 func TestGetAppStateNewArgsAreStrict(t *testing.T) {
 	fx := startServer(t)
 	// both new args are validated before any GUI work happens
