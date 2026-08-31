@@ -135,8 +135,22 @@ func toolWaitFor(st *serverState, a args) (any, *ToolError) {
 	started := time.Now()
 	deadline := started.Add(time.Duration(timeout * float64(time.Second)))
 	for {
-		parsed, terr := dumpTree(st.WinSrc, maxDepthDefault, maxElements)
+		// poll at the hard depth cap: text visible to a deep get_app_state
+		// must be visible to the wait too (the 350-element cap still applies)
+		parsed, terr := dumpTree(st.WinSrc, maxDepthHard, maxElements)
 		if terr != nil {
+			// the watched window closing IS the primary "gone" outcome — a
+			// dismissed dialog takes its tree (and our address) with it
+			if until == "gone" && terr.Code == "osascript_error" {
+				elapsed := pyRound(time.Since(started).Seconds(), 1)
+				markStale(st)
+				return waitForPayload{
+					Result: fmt.Sprintf("%q is gone after %s s (the captured "+
+						"window itself went away).", text, pyFloatStr(elapsed)),
+					Elapsed: pyFloatStr(elapsed),
+					Hint:    "call get_app_state to observe and get fresh indices",
+				}, nil
+			}
 			return nil, terr
 		}
 		found := false
@@ -161,7 +175,7 @@ func toolWaitFor(st *serverState, a args) (any, *ToolError) {
 			markStale(st)
 			return nil, toolErr("wait_timeout",
 				fmt.Sprintf("%q still not %s after %s s", text, until,
-					pyFloatStr(timeout)),
+					pyFloatStr(pyRound(time.Since(started).Seconds(), 1))),
 				"get_app_state to see where the UI actually is; raise "+
 					"timeout_s if the operation is just slow")
 		}

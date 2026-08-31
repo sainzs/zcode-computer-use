@@ -651,6 +651,13 @@ func TestMenuPathGolden(t *testing.T) {
 	if _, terr := splitMenuPath("File"); terr == nil || terr.Code != "invalid_args" {
 		t.Fatalf("single segment must be rejected: %v", terr)
 	}
+	// an empty segment must be rejected, never dropped — a rewritten path
+	// could click a different (destructive) item
+	for _, bad := range []string{"File > > Save", "File > Save > ", " > File > Save"} {
+		if _, terr := splitMenuPath(bad); terr == nil || terr.Code != "invalid_args" {
+			t.Fatalf("%q must be rejected: %v", bad, terr)
+		}
+	}
 	segs, terr := splitMenuPath(" File >  Export as PDF… ")
 	if terr != nil || len(segs) != 2 || segs[0] != "File" || segs[1] != "Export as PDF…" {
 		t.Fatalf("split: %v %v", segs, terr)

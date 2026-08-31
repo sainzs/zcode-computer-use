@@ -27,13 +27,19 @@ type menuListPayload struct {
 
 // splitMenuPath splits "File > Export as PDF…" into trimmed segments.
 // Segments never contain ">" — no real menu title does, and keeping the
-// separator unescapable keeps the address builder simple.
+// separator unescapable keeps the address builder simple. An empty segment
+// ("File > > Save") is rejected, never silently dropped: a rewritten path
+// could click a different — possibly destructive — item.
 func splitMenuPath(path string) ([]string, *ToolError) {
 	var segments []string
 	for _, part := range strings.Split(path, ">") {
-		if t := strings.TrimSpace(part); t != "" {
-			segments = append(segments, t)
+		t := strings.TrimSpace(part)
+		if t == "" {
+			return nil, toolErr("invalid_args",
+				fmt.Sprintf("empty segment in path %q", path),
+				"segments are separated by a single \" > \"")
 		}
+		segments = append(segments, t)
 	}
 	if len(segments) < 2 {
 		return nil, toolErr("invalid_args",
