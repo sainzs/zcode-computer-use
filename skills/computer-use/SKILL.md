@@ -22,9 +22,9 @@ System Settings → Privacy & Security:
 
 `cliclick` must be on PATH (`brew install cliclick`); scroll uses Apple's
 bundled `/usr/bin/python3` (present with Xcode CLT).
-Preflight: `plugins/zcode-computer-use/cuu/bin/cuu selftest` — it names
+Preflight: `cuu/bin/cuu selftest` — it names
 the exact missing grant. (Build first if the binary is missing:
-`cd plugins/zcode-computer-use/cuu && go build -o bin/cuu .`)
+`cd cuu && go build -o bin/cuu .`)
 
 ## The operating loop
 

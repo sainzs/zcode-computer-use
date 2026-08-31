@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>zcode-computer-use — computer control for AI coding agents</title>
+<meta name="description" content="A single-file, stdlib-only MCP server that gives AI agents eyes and hands on macOS: per-window screenshots, an indexed accessibility tree with diff markers, element-first actions, verified text selection, and 4-way scroll.">
+<meta property="og:title" content="zcode-computer-use — computer control for AI coding agents">
+<meta property="og:description" content="One stdlib-only Python file: per-window screenshots, an indexed AX tree with diff markers, element-first actions, verified text selection, 4-way verified scroll.">
+<meta property="og:image" content="https://sainzs.github.io/zcode-computer-use/assets/banner.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0c10'/%3E%3Ctext x='32' y='44' font-family='monospace' font-size='34' font-weight='700' fill='%2300ffb2' text-anchor='middle'%3E%5B%5D%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg-sunken: #07090c;
+    --raise: #0d1015;
+    --line: #1c2129;
+    --line-soft: #161a21;
+    --line-strong: #2b333d;
+    --fg: #f0f3f6;
+    --muted: #8b95a0;
+    --dim: #5a636d;
+    --mint: #00ffb2;
+    --mint-dim: rgba(0, 255, 178, .3);
+    --blue: #58a6ff;
+    --purple: #a78bfa;
+    --amber: #f5b83d;
+    --red: #f16a5c;
+    --sans: "Geist", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --dither: conic-gradient(rgba(255,255,255,.035) 90deg, transparent 90deg 180deg, rgba(255,255,255,.035) 180deg 270deg, transparent 270deg);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background:
+      radial-gradient(900px 380px at 70% -120px, rgba(0, 255, 178, .05), transparent 65%),
+      var(--bg);
+    color: var(--fg);
+    font: 400 15.5px/1.65 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+  /* ruler-tick divider */
+  .ruler { height: 9px; border-top: 1px solid var(--line-soft); position: relative; }
+  .ruler::after {
+    content: ""; position: absolute; inset: 0 0 auto; height: 100%;
+    background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 76px);
+    background-size: 76px 5px; background-repeat: repeat-x;
+  }
+
+  /* ---------- nav ---------- */
+  header { border-bottom: 1px solid var(--line-soft); }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+  .wordmark { font-family: var(--mono); font-weight: 500; font-size: 13.5px; letter-spacing: .02em; }
+  .wordmark span { color: var(--mint); }
+  .nav .links { display: flex; gap: 26px; font-family: var(--mono); font-size: 12px; color: var(--dim); letter-spacing: .06em; }
+  .nav .links a:hover { color: var(--fg); }
+
+  /* ---------- hero ---------- */
+  .hero { display: grid; grid-template-columns: 1fr 218px; gap: 56px; padding: 92px 0 64px; align-items: end; }
+  .kick { font-family: var(--mono); font-size: 11.5px; letter-spacing: .24em; color: var(--dim); text-transform: uppercase; margin-bottom: 26px; }
+  .kick em { color: var(--mint); font-style: normal; padding: 0 8px; }
+  h1 { font-size: clamp(42px, 6.4vw, 76px); font-weight: 600; letter-spacing: -.035em; line-height: 1.02; margin-bottom: 26px; }
+  h1 span { color: var(--mint); }
+  .sub { color: var(--muted); font-size: 16.5px; max-width: 33em; margin-bottom: 34px; }
+  .sub b { color: var(--fg); font-weight: 500; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--mono); font-size: 12.5px; font-weight: 500;
+    padding: 11px 18px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: transparent; color: var(--fg);
+    transition: border-color .15s, background .15s;
+  }
+  .btn:hover { border-color: var(--mint-dim); }
+  .btn.primary { background: #f0f3f6; color: #0b0d10; border-color: #f0f3f6; font-weight: 600; }
+  .btn.primary:hover { border-color: #fff; }
+  .meta { border-left: 1px solid var(--line); padding-left: 26px; display: flex; flex-direction: column; align-self: stretch; justify-content: flex-end; }
+  .meta div { padding: 13px 0; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: 12px; color: var(--dim); letter-spacing: .08em; display: flex; justify-content: space-between; }
+  .meta div:last-child { border-bottom: none; }
+  .meta b { color: var(--fg); font-weight: 500; }
+
+  /* ---------- stat row ---------- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 64px; }
+  .stat { padding: 26px 28px; }
+  .stat + .stat { border-left: 1px solid var(--line-soft); }
+  .stat .n { font-family: var(--mono); font-size: clamp(30px, 4vw, 44px); font-weight: 500; letter-spacing: -.02em; line-height: 1; }
+  .stat .n small { font-size: .55em; color: var(--muted); font-weight: 400; }
+  .stat .l { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; margin-top: 12px; }
+
+  /* ---------- selection-marquee ---------- */
+  .marquee { position: relative; border: 1px dashed rgba(0, 255, 178, .28); border-radius: 6px; padding: 22px; margin: 0 0 96px; }
+  .h { position: absolute; width: 7px; height: 7px; background: var(--bg); border: 1px solid var(--mint); z-index: 2; }
+  .h.tl { top: -4px; left: -4px; } .h.tr { top: -4px; right: -4px; }
+  .h.bl { bottom: -4px; left: -4px; } .h.br { bottom: -4px; right: -4px; }
+  .mlabel {
+    position: absolute; top: -8px; left: 22px; padding: 0 10px; background: var(--bg);
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .22em; color: var(--mint); text-transform: uppercase;
+  }
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .demo-grid figure { margin: 0; }
+  .demo-grid .imgwrap { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--raise); }
+  .demo-grid img { width: 100%; display: block; }
+  .demo-grid figcaption { font-family: var(--mono); font-size: 11.5px; color: var(--dim); padding: 10px 2px 0; letter-spacing: .04em; }
+  .demo-grid figcaption em { color: var(--mint); font-style: normal; padding-right: 8px; }
+
+  /* ---------- left-rail sections ---------- */
+  section { padding: 84px 0; }
+  section + section { border-top: 1px solid var(--line-soft); }
+  .rail { display: grid; grid-template-columns: 172px 1fr; gap: 44px; }
+  .rail-label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; }
+  .rail-label em { display: block; color: var(--mint); font-style: normal; margin-bottom: 8px; }
+  h2 { font-size: 22px; font-weight: 600; letter-spacing: -.015em; margin-bottom: 30px; }
+  .content { min-width: 0; }
+  .content > :last-child { margin-bottom: 0; }
+
+  /* loop spec rows */
+  .spec { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  .spec .col { padding-right: 28px; }
+  .spec .col + .col { border-left: 1px solid var(--line); padding-left: 28px; }
+  .spec .no { font-family: var(--mono); font-size: 10.5px; letter-spacing: .22em; color: var(--dim); margin-bottom: 16px; }
+  .spec .no em { color: var(--mint); font-style: normal; }
+  .spec .cmd { font-family: var(--mono); font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+  .spec .cmd em { color: var(--mint); font-style: normal; }
+  .spec .out { font-family: var(--mono); font-size: 12.3px; line-height: 1.85; color: var(--muted); white-space: pre-wrap; }
+
+  /* ---------- trace ribbon ---------- */
+  .ribbon-cap { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--dim); text-transform: uppercase; margin-bottom: 14px; }
+  .ribbon-scroll { min-width: 0; overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-sunken); }
+  .ribbon { display: flex; align-items: flex-end; gap: 3px; height: 84px; padding: 18px 16px 0; position: relative; min-width: max-content; }
+  .phase-row { position: relative; height: 20px; margin-top: 10px; }
+  .phase-row span { position: absolute; top: 0; white-space: nowrap; }
+  .card { width: 13px; border-radius: 2px 2px 0 0; flex: none; opacity: 0; transform: translateY(10px); transition: opacity .4s ease, transform .4s ease; }
+  .card.on { opacity: 1; transform: none; }
+  .card.observe { background: var(--mint); height: 58px; }
+  .card.act { background: var(--blue); height: 48px; }
+  .card.verify { background: #3a424d; height: 40px; }
+  .card.guard { background: var(--amber); height: 64px; }
+  .card.error { background: var(--red); height: 70px; box-shadow: 0 0 14px rgba(241, 106, 92, .35); }
+  .gap { width: 14px; flex: none; }
+  .sigma {
+    margin-left: 12px; align-self: center; flex: none;
+    font-family: var(--mono); font-size: 11px; color: var(--mint);
+    border: 1px solid var(--mint-dim); border-radius: 4px; padding: 5px 9px; white-space: nowrap;
+  }
+  .phase-row, .phase-row span { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px 18px; margin-top: 18px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; font-style: normal; }
+  .figcap { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; margin-top: 16px; line-height: 1.9; }
+
+  /* dither band */
+  .dither { height: 26px; border: 1px solid var(--line); border-radius: 6px; background: var(--dither); background-size: 8px 8px; margin-top: 26px; }
+
+  /* code */
+  pre.block {
+    background: var(--raise); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px 20px; overflow-x: auto; font-family: var(--mono);
+    font-size: 13px; line-height: 1.7; position: relative;
+  }
+  .copy-btn {
+    position: absolute; top: 10px; right: 10px; font-family: var(--mono);
+    font-size: 11px; color: var(--muted); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 5px 11px; cursor: pointer;
+  }
+  .copy-btn:hover { color: var(--mint); border-color: var(--mint-dim); }
+  .micro { font-family: var(--mono); font-size: 12px; color: var(--dim); margin-top: 16px; letter-spacing: .02em; }
+  .micro b { color: var(--muted); font-weight: 500; }
+
+  /* why — comparison rows */
+  .cmp { border-top: 1px solid var(--line); }
+  .cmp .row { display: grid; grid-template-columns: 180px 1fr 1fr; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); font-size: 14px; }
+  .cmp .head { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); padding: 0 0 10px; border-bottom: 1px solid var(--line); }
+  .cmp .a { font-weight: 500; }
+  .cmp .b { color: var(--muted); }
+  .cmp .c { color: var(--dim); }
+
+  /* refuses + faq */
+  .refuses { display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; }
+  .refuses .item { display: grid; grid-template-columns: 18px 1fr; gap: 12px; padding: 15px 0; border-bottom: 1px solid var(--line-soft); }
+  .refuses .x { font-family: var(--mono); color: var(--mint); font-size: 13px; padding-top: 1px; }
+  .refuses .t { font-weight: 500; font-size: 14.5px; }
+  .refuses .d { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+
+  .faq .qa { padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+  .faq .q { font-weight: 500; font-size: 14.5px; }
+  .faq .q::before { content: "> "; color: var(--mint); font-family: var(--mono); font-weight: 400; }
+  .faq .a { color: var(--muted); font-size: 14px; margin-top: 6px; max-width: 56em; }
+  .faq .a code { font-family: var(--mono); font-size: 12.5px; color: var(--fg); background: var(--raise); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
+
+  /* tools catalog — commandcode /models treatment */
+  .catalog-frame { position: relative; border: 1px solid var(--line); border-radius: 6px; padding: 4px 0; }
+  .catalog { font-family: var(--mono); font-size: 12.5px; }
+  .cat-row { display: grid; grid-template-columns: 190px 84px 1fr 210px; gap: 16px; align-items: center; padding: 11px 18px; border-bottom: 1px solid var(--line-soft); }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row.head { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); padding: 10px 18px; }
+  .cat-row:not(.head):hover { background: rgba(255,255,255,.02); }
+  .cat-tool { font-weight: 500; color: var(--fg); }
+  .cat-tool .chip { display: inline-block; margin-left: 8px; font-size: 9.5px; letter-spacing: .08em; background: #f0f3f6; color: #0b0d10; border-radius: 3px; padding: 1.5px 5px; vertical-align: 1px; font-weight: 500; }
+  .cat-kind { color: var(--mint); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .cat-sig { color: var(--dim); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .cov { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; }
+  .cov .bar { height: 4px; background: var(--line-soft); border-radius: 2px; overflow: hidden; }
+  .cov .bar i { display: block; height: 100%; background: var(--mint); border-radius: 2px; }
+  .cov .lbl { font-size: 10px; color: var(--dim); letter-spacing: .04em; line-height: 1.5; }
+
+  footer { border-top: 1px solid var(--line-soft); padding: 30px 0 56px; }
+  .foot { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--dim); letter-spacing: .04em; flex-wrap: wrap; gap: 12px; }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--mint); }
+
+  #toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+    font-family: var(--mono); font-size: 12.5px; color: #0b0d10; background: var(--mint);
+    padding: 9px 18px; border-radius: 8px; transition: transform .2s; z-index: 9;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .card { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
+  @media (max-width: 860px) {
+    .nav { flex-wrap: wrap; gap: 8px 0; }
+    .nav .links { flex-wrap: wrap; row-gap: 6px; gap: 18px; }
+    .hero { grid-template-columns: 1fr; gap: 36px; }
+    .meta { border-left: none; padding-left: 0; border-top: 1px solid var(--line); }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stat:nth-child(3) { border-left: none; }
+    .stat { border-bottom: 1px solid var(--line-soft); }
+    .stat:nth-child(3), .stat:nth-child(4) { border-bottom: none; }
+    .demo-grid, .spec, .refuses { grid-template-columns: 1fr; }
+    .catalog-frame { overflow-x: auto; }
+    .catalog { min-width: 560px; }
+    .spec .col + .col { border-left: none; border-top: 1px solid var(--line); padding: 24px 0 0; }
+    .rail { grid-template-columns: 1fr; gap: 20px; }
+    .cmp .row { grid-template-columns: 1fr; gap: 4px; }
+    .cmp .head { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="wordmark" href="#"><span>[</span> zcode-computer-use <span>]</span></a>
+    <div class="links">
+      <a href="#traced">traced</a>
+      <a href="#tools">tools</a>
+      <a href="#install">install</a>
+      <a href="#why">why</a>
+      <a href="#refuses">refuses</a>
+      <a href="#faq">faq</a>
+      <a href="https://github.com/sainzs/zcode-computer-use">github ↗</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <div class="kick">Model Context Protocol <em>/</em> macOS <em>/</em> open source</div>
+      <h1>The agent selects.<br>The screen <span>answers.</span></h1>
+      <p class="sub">Computer control for AI coding agents: a per-window screenshot plus an indexed
+      accessibility tree, element-first actions with pixel fallback — and after every action,
+      <b>diff markers that show exactly what changed</b>. One stdlib-only Python file.
+      Read the whole driver in an afternoon.</p>
+      <div class="cta">
+        <button class="btn primary" id="install-copy">Copy MCP config <span style="opacity:.5">⧉</span></button>
+        <a class="btn" href="https://github.com/sainzs/zcode-computer-use">github ↗</a>
+      </div>
+    </div>
+    <div class="meta">
+      <div><span>files</span><b>1</b></div>
+      <div><span>pip dependencies</span><b>0</b></div>
+      <div><span>tools</span><b>12</b></div>
+      <div><span>scroll</span><b>4-way</b></div>
+      <div><span>tests green</span><b>21 + 31</b></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n"><span data-count="31">0</span></div><div class="l">live E2E checks</div></div>
+    <div class="stat"><div class="n"><span data-count="21">0</span></div><div class="l">protocol tests</div></div>
+    <div class="stat"><div class="n"><span data-count="0">0</span></div><div class="l">pip dependencies</div></div>
+    <div class="stat"><div class="n"><span data-count="3270">0</span><small> px</small></div><div class="l">verified scroll travel</div></div>
+  </div>
+
+  <div class="marquee">
+    <span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span>
+    <span class="mlabel">axwindow — observed</span>
+    <div class="demo-grid">
+      <figure>
+        <div class="imgwrap"><img src="demo/cinta-quickstart.gif" alt="selftest preflight, 6/6 probes green"></div>
+        <figcaption><em>$</em> selftest — 6/6 probes green</figcaption>
+      </figure>
+      <figure>
+        <div class="imgwrap"><img src="demo/cinta-tests.gif" alt="protocol suite, 21 tests OK"></div>
+        <figcaption><em>$</em> protocol suite — 21 tests, OK</figcaption>
+      </figure>
+      <figure>
+        <div class="imgwrap"><img src="demo/before-scroll.png" alt="Safari before scrolling"></div>
+        <figcaption><em>observe</em> — get_app_state, before</figcaption>
+      </figure>
+      <figure>
+        <div class="imgwrap"><img src="demo/after-scroll-right-2.png" alt="Safari after synthetic scroll right"></div>
+        <figcaption><em>act</em> — scroll right 2 pages · wheel events only</figcaption>
+      </figure>
+    </div>
+  </div>
+</div>
+
+<div class="wrap"><div class="ruler"></div></div>
+
+<section id="traced">
+  <div class="wrap rail">
+    <div class="rail-label"><em>01</em>traced</div>
+    <div class="content">
+      <div class="ribbon-cap">the E2E suite, every call in order — textedit run</div>
+      <div class="ribbon-scroll">
+        <div class="ribbon" id="ribbon"></div>
+        <div class="phase-row" id="phases"></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--mint)"></i>observe</span>
+        <span><i style="background:var(--blue)"></i>act</span>
+        <span><i style="background:#3a424d"></i>verify</span>
+        <span><i style="background:var(--amber)"></i>guard</span>
+        <span><i style="background:var(--red)"></i>error</span>
+      </div>
+      <div class="figcap">24 protocol calls · 1 deliberate stale-guard error (a feature, hit on purpose)
+      · ¶ every card is a real JSON-RPC call from tests/e2e_textedit.py</div>
+      <div class="dither"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap rail">
+    <div class="rail-label"><em>02</em>the loop</div>
+    <div class="content">
+      <div class="spec">
+        <div class="col">
+          <div class="no"><em>01</em> — OBSERVE</div>
+          <div class="cmd"><em>$</em> get_app_state</div>
+          <div class="out">→ screenshot PNG
+→ indexed AX tree
+→ pixel scale</div>
+        </div>
+        <div class="col">
+          <div class="no"><em>02</em> — ACT</div>
+          <div class="cmd"><em>$</em> click element_index 12</div>
+          <div class="out">AXPress preferred
+x/y in screenshot px
+re-anchored to window</div>
+        </div>
+        <div class="col">
+          <div class="no"><em>03</em> — VERIFY</div>
+          <div class="cmd"><em>$</em> get_app_state</div>
+          <div class="out">→ tree: +3 new ~1 changed
+diff keyed by position,
+not by brittle index</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="wrap rail">
+    <div class="rail-label"><em>03</em>tools</div>
+    <div class="content">
+      <div class="catalog-frame">
+        <span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span>
+        <div class="catalog">
+          <div class="cat-row head"><span>tool</span><span>kind</span><span>signature</span><span>coverage</span></div>
+          <div class="cat-row"><span class="cat-tool">get_app_state</span><span class="cat-kind">observe</span><span class="cat-sig">(app, window?, depth?, activate?, launch?)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e ×6 · protocol</span></div></div>
+          <div class="cat-row"><span class="cat-tool">list_windows<span class="chip">V3</span></span><span class="cat-kind">observe</span><span class="cat-sig">(app)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · protocol</span></div></div>
+          <div class="cat-row"><span class="cat-tool">list_apps</span><span class="cat-kind">observe</span><span class="cat-sig">()</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · protocol</span></div></div>
+          <div class="cat-row"><span class="cat-tool">click</span><span class="cat-kind">act</span><span class="cat-sig">(element_index | x, y, button, count)</span><div class="cov"><span class="bar"><i style="width:80%"></i></span><span class="lbl">e2e · element path</span></div></div>
+          <div class="cat-row"><span class="cat-tool">type_text</span><span class="cat-kind">act</span><span class="cat-sig">(text, method = paste | keys)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · both methods</span></div></div>
+          <div class="cat-row"><span class="cat-tool">press_key</span><span class="cat-kind">act</span><span class="cat-sig">(key)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · deterministic edit</span></div></div>
+          <div class="cat-row"><span class="cat-tool">scroll<span class="chip">V3</span></span><span class="cat-kind">act</span><span class="cat-sig">(direction, pages, x?, y?)</span><div class="cov"><span class="bar"><i style="width:90%"></i></span><span class="lbl">manual · 4-way safari</span></div></div>
+          <div class="cat-row"><span class="cat-tool">drag</span><span class="cat-kind">act</span><span class="cat-sig">(from_x, from_y, to_x, to_y)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · window move</span></div></div>
+          <div class="cat-row"><span class="cat-tool">set_value</span><span class="cat-kind">act</span><span class="cat-sig">(element_index, value)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e</span></div></div>
+          <div class="cat-row"><span class="cat-tool">select_text<span class="chip">V3</span></span><span class="cat-kind">act</span><span class="cat-sig">(element_index, start, length)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · keyboard fallback</span></div></div>
+          <div class="cat-row"><span class="cat-tool">element_info</span><span class="cat-kind">inspect</span><span class="cat-sig">(element_index)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e</span></div></div>
+          <div class="cat-row"><span class="cat-tool">perform_action</span><span class="cat-kind">act</span><span class="cat-sig">(element_index, action)</span><div class="cov"><span class="bar"><i style="width:100%"></i></span><span class="lbl">e2e · live AXShowMenu</span></div></div>
+        </div>
+      </div>
+      <p class="micro">coverage bars are literal: which suites drove each tool — <b>drag</b> ships from the v1 design and has
+      not been re-driven in v3; it gets a low bar until it earns a higher one.</p>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap rail">
+    <div class="rail-label"><em>04</em>install</div>
+    <div class="content">
+      <pre class="block" id="mcp-json">{
+  "mcpServers": {
+    "zcode-computer-use": {
+      "command": "python3",
+      "args": ["/absolute/path/to/zcode-computer-use/mcp/server.py"],
+      "env": { "PYTHONUNBUFFERED": "1" }
+    }
+  }
+}</pre>
+      <p class="micro">paste into your MCP config — <b>ZCode, Claude Code, Cursor</b>, any MCP host · then grant the host app
+      <b>Accessibility + Screen Recording</b> and run <b>python3 mcp/server.py selftest</b> — it names the exact missing permission</p>
+    </div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="wrap rail">
+    <div class="rail-label"><em>05</em>why</div>
+    <div class="content">
+      <div class="cmp">
+        <div class="row head"><span></span><span>zcode-computer-use</span><span>typical alternative</span></div>
+        <div class="row"><span class="a">Install surface</span><span class="b">one .py, zero pip deps</span><span class="c">runtime + package graph</span></div>
+        <div class="row"><span class="a">Auditability</span><span class="b">whole driver ~1,800 lines</span><span class="c">trust the bundle</span></div>
+        <div class="row"><span class="a">Tree hygiene</span><span class="b">forced re-fetch, anti-forgery, diff markers</span><span class="c">varies</span></div>
+        <div class="row"><span class="a">Errors</span><span class="b">structured {code, message, remedy}</span><span class="c">prose strings</span></div>
+        <div class="row"><span class="a">Focus</span><span class="b">observe without stealing focus</span><span class="c">usually activates</span></div>
+        <div class="row"><span class="a">Scroll</span><span class="b">4-way, verified, session-tap recipe</span><span class="c">often vertical-only, unverified</span></div>
+        <div class="row"><span class="a">Text selection</span><span class="b">content-verified + keyboard fallback</span><span class="c">rare</span></div>
+        <div class="row"><span class="a">Tests</span><span class="b">21 protocol + 31-check live E2E</span><span class="c">—</span></div>
+      </div>
+      <p class="micro">the pitch isn't more features — it's one auditable file with the traps written down:
+      <b>HID-tap wheel-event drops</b> · <b>apps that ignore scripted selection writes</b> · <b>JXA CFRelease segfaults</b></p>
+    </div>
+  </div>
+</section>
+
+<section id="refuses">
+  <div class="wrap rail">
+    <div class="rail-label"><em>06</em>refuses</div>
+    <div class="content">
+      <div class="refuses">
+        <div class="item"><span class="x">×</span><div><div class="t">steal focus to observe</div><div class="d">activate:false reads background windows without raising them.</div></div></div>
+        <div class="item"><span class="x">×</span><div><div class="t">launch apps silently</div><div class="d">a non-running app is app_not_found unless you pass launch:true.</div></div></div>
+        <div class="item"><span class="x">×</span><div><div class="t">trust its memory of the UI</div><div class="d">element indexes die with the tree that produced them.</div></div></div>
+        <div class="item"><span class="x">×</span><div><div class="t">return prose errors</div><div class="d">every failure is structured {code, message, remedy} JSON.</div></div></div>
+        <div class="item"><span class="x">×</span><div><div class="t">phone home, ever</div><div class="d">no telemetry, no network calls, no accounts.</div></div></div>
+        <div class="item"><span class="x">×</span><div><div class="t">grow a dependency graph</div><div class="d">one stdlib-only file; nothing pip-installed.</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap rail">
+    <div class="rail-label"><em>07</em>faq</div>
+    <div class="content faq">
+      <div class="qa"><div class="q">Why does my scroll do nothing?</div><div class="a">macOS silently drops wheel events posted to the HID event tap — the route most
+      tutorials use. This server posts pixel-unit events to the session tap via Apple's bundled Python (pyobjc). Documented in code, proven in tests.</div></div>
+      <div class="qa"><div class="q">Does it steal focus to observe an app?</div><div class="a"><code>activate:false</code> captures and reads a background window without raising it.
+      Activation is opt-in per call; launching apps always is.</div></div>
+      <div class="qa"><div class="q">How does the agent know its click worked?</div><div class="a">The next observation carries diff markers keyed by tree position: which elements
+      appeared, which changed, which vanished. Selection results are verified against element content, not trusted.</div></div>
+      <div class="qa"><div class="q">macOS only?</div><div class="a">Yes — the driving stack is System Events, CGWindowList, screencapture and cliclick.
+      That's also why the whole thing fits in one auditable file.</div></div>
+      <div class="qa"><div class="q">Zero dependencies — even for scrolling?</div><div class="a">Everything except synthetic scroll, which shells to Apple's bundled
+      <code>/usr/bin/python3</code> (pyobjc ships with the Xcode CLT). No pip anywhere.</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>MIT · built with ZCode on GLM</span>
+    <span><a href="https://github.com/sainzs/zcode-computer-use">github</a> · <a href="https://github.com/sainzs/cinta">gifs by cinta</a></span>
+  </div>
+</footer>
+
+<div id="toast">MCP config copied</div>
+
+<script>
+  // trace ribbon: the real E2E sequence (tests/e2e_textedit.py), in order
+  const TRACE = [
+    ["observe"],["verify"],["verify"],["verify"],
+    ["observe"],["observe"],
+    ["act"],["act","type · paste"],["act","type · keys"],
+    ["observe"],["verify"],["verify"],
+    ["observe"],["verify"],
+    ["act","select + verify"],["verify"],
+    ["error","stale guard fires — by design"],
+    ["observe"],["verify"],["verify"],["verify"],
+    ["act","list_windows"],["observe"],
+    ["guard","no silent launch"]
+  ];
+  const PHASES = [[0,"boot + observe"],[5,"converge"],[6,"type"],[13,"select"],[16,"guard"],[17,"background"],[22,"targeting"]];
+  const ribbon = document.getElementById("ribbon");
+  const phases = document.getElementById("phases");
+  let phaseEls = [];
+  TRACE.forEach((c, i) => {
+    const el = document.createElement("div");
+    el.className = "card " + c[0];
+    el.title = c[1] || c[0];
+    ribbon.appendChild(el);
+    phaseEls.push(el);
+  });
+  PHASES.slice().reverse().forEach(([idx]) => {
+    const g = document.createElement("div");
+    g.className = "gap";
+    ribbon.insertBefore(g, phaseEls[idx]);
+  });
+  const sigma = document.createElement("div");
+  sigma.className = "sigma"; sigma.textContent = "Σ 24 calls";
+  ribbon.appendChild(sigma);
+  PHASES.forEach(([, label]) => {
+    const span = document.createElement("span");
+    span.textContent = label;
+    phases.appendChild(span);
+  });
+  // align labels to the measured gap positions — no width math, exact at any width
+  requestAnimationFrame(() => {
+    const gaps = [...ribbon.querySelectorAll(".gap")];
+    phases.style.minWidth = ribbon.scrollWidth + "px";
+    [...phases.children].forEach((span, pi) => {
+      span.style.left = gaps[pi].offsetLeft + "px";
+    });
+  });
+
+  // entrance animations
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      io.unobserve(en.target);
+      if (en.target.id === "ribbon") {
+        const cards = ribbon.querySelectorAll(".card");
+        cards.forEach((c, i) => setTimeout(() => c.classList.add("on"), i * 42));
+      }
+      if (en.target.classList.contains("stats")) {
+        en.target.querySelectorAll("[data-count]").forEach((el) => {
+          const target = +el.dataset.count, t0 = performance.now(), dur = 1100;
+          const tick = (t) => {
+            const p = Math.min(1, (t - t0) / dur), eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased).toLocaleString("en-US");
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+    });
+  }, { threshold: .3 });
+  document.querySelectorAll("#ribbon, .stats").forEach((el) => io.observe(el));
+
+  const JSON_TEXT = document.getElementById("mcp-json").innerText;
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 1600);
+  }
+  function copyConfig() {
+    (navigator.clipboard ? navigator.clipboard.writeText(JSON_TEXT) : Promise.reject())
+      .then(() => toast("MCP config copied"))
+      .catch(() => {
+        const ta = document.createElement("textarea");
+        ta.value = JSON_TEXT; document.body.appendChild(ta);
+        ta.select(); document.execCommand("copy"); ta.remove();
+        toast("MCP config copied");
+      });
+  }
+  document.getElementById("install-copy").addEventListener("click", copyConfig);
+</script>
+
+</body>
+</html>

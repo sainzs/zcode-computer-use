@@ -38,7 +38,7 @@ Build once (the manifest points at the built binary, which is not tracked
 in git):
 
 ```bash
-cd plugins/zcode-computer-use/cuu
+cd cuu
 go build -o bin/cuu .
 ```
 
@@ -53,7 +53,7 @@ Manual fallback (any ZCode build): add to your config's `mcpServers`:
 {
   "mcpServers": {
     "zcode-computer-use": {
-      "command": "/absolute/path/to/plugins/zcode-computer-use/cuu/bin/cuu",
+      "command": "/absolute/path/to/zcode-computer-use/cuu/bin/cuu",
       "args": ["serve"]
     }
   }
@@ -76,7 +76,7 @@ needs two grants, then a restart:
 Preflight, which names the exact missing grant:
 
 ```bash
-plugins/zcode-computer-use/cuu/bin/cuu selftest
+cuu/bin/cuu selftest
 ```
 
 ## The operating loop
@@ -131,7 +131,7 @@ cuu press_key --key cmd+s
 ## Verification
 
 ```bash
-cd plugins/zcode-computer-use/cuu && go test ./...   # golden protocol tests
+cd cuu && go test ./...   # golden protocol tests
 cuu/bin/cuu selftest                                 # deps + permissions preflight
 python3 tests/_legacy/test_protocol.py               # original v3 suite, against the v3 server
 python3 tests/_legacy/e2e_textedit.py                # live v3 drive of TextEdit
