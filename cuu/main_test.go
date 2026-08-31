@@ -33,12 +33,19 @@ type serverFixture struct {
 }
 
 func startServer(t *testing.T) *serverFixture {
+	return startServerInDir(t, t.TempDir())
+}
+
+// startServerInDir is startServer against a caller-prepared data dir — tools
+// that read a pre-existing capture (ocr) test against a hand-written
+// state.json instead of driving a real get_app_state.
+func startServerInDir(t *testing.T, dataDir string) *serverFixture {
 	t.Helper()
 	bin := buildBinary(t)
 	cmd := exec.Command(bin, "serve")
 	// hermetic data dir: the developer's real state.json must never flip a
 	// no_state assertion into stale_state
-	cmd.Env = append(os.Environ(), "ZCODE_CUA_DATA="+t.TempDir())
+	cmd.Env = append(os.Environ(), "ZCODE_CUA_DATA="+dataDir)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -892,6 +899,86 @@ func TestInlineScreenshotRoundTrip(t *testing.T) {
 	if inlineScreenshot(bad) != "" {
 		t.Fatal("garbage must yield empty")
 	}
+}
+
+// ---------------------------------------------------------------- 4.2 node 3: ocr
+
+func TestOCRBoxToPixelsGolden(t *testing.T) {
+	// Vision's box is normalized with a BOTTOM-LEFT origin: y flips, and the
+	// top edge sits (y + h) from the bottom
+	px, py, pw, ph := ocrBoxToPixels(0.5, 0.25, 0.25, 0.125, 1000, 800)
+	if px != 500 || py != 500 || pw != 250 || ph != 100 {
+		t.Fatalf("box: %d,%d %dx%d", px, py, pw, ph)
+	}
+	// a box at the image's bottom-left edge maps to the bottom of pixel space
+	px, py, _, _ = ocrBoxToPixels(0, 0, 0.5, 0.5, 1000, 800)
+	if px != 0 || py != 400 {
+		t.Fatalf("bottom-left origin: %d,%d", px, py)
+	}
+	// rounding, not truncation: 19.9px truncates to 19 but rounds to 20
+	px, _, pw, _ = ocrBoxToPixels(0.199, 0, 0.333, 0, 100, 10)
+	if px != 20 || pw != 33 {
+		t.Fatalf("rounding: %d %d", px, pw)
+	}
+}
+
+func TestOCRValidation(t *testing.T) {
+	fx := startServer(t)
+	// wrong-typed filter is invalid_args, checked before any state look
+	resp := fx.callTool(t, "ocr", map[string]any{"filter": 7})
+	if code := errCode(t, payloadOf(t, resp)); code != "invalid_args" {
+		t.Fatalf("filter type: %s", code)
+	}
+	// nothing captured yet -> no_state naming the remedy
+	resp = fx.callTool(t, "ocr", nil)
+	if code := errCode(t, payloadOf(t, resp)); code != "no_state" {
+		t.Fatalf("no state: %s", code)
+	}
+	errObj := payloadOf(t, resp)["error"].(map[string]any)
+	if !strings.Contains(errObj["remedy"].(string), "get_app_state") {
+		t.Fatalf("remedy: %v", errObj["remedy"])
+	}
+}
+
+func TestOCRLive(t *testing.T) {
+	if !guiAvailable() {
+		t.Skip("System Events not reachable")
+	}
+	shot, err := filepath.Abs(filepath.Join("..", "docs", "demo", "before-scroll.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(shot); err != nil {
+		t.Skipf("demo capture missing: %v", err)
+	}
+	// ocr consumes the on-disk capture, not a live window: boot the server on
+	// a data dir whose state.json already points at the demo PNG
+	dataDir := t.TempDir()
+	st := &serverState{App: "Probe", Screenshot: shot, Stale: false,
+		Elements: map[int]treeEntry{}, PrevBodies: map[string]string{}}
+	raw, err := json.MarshalIndent(st, "", " ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dataDir, "state.json"), raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	fx := startServerInDir(t, dataDir)
+	resp := fx.callTool(t, "ocr", nil)
+	if resp["result"].(map[string]any)["isError"] == true {
+		t.Fatalf("ocr failed: %v", resp)
+	}
+	payload := payloadOf(t, resp)
+	lines, ok := payload["lines"].([]any)
+	if !ok || len(lines) == 0 {
+		t.Fatalf("lines missing: %v", payload)
+	}
+	for _, ln := range lines {
+		if s, isStr := ln.(string); isStr && strings.Contains(s, "X500") {
+			return
+		}
+	}
+	t.Fatalf("no line containing X500: %v", lines)
 }
 
 func TestArgCoercionGolden(t *testing.T) {

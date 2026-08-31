@@ -207,5 +207,15 @@ const toolsManifest = `[
    },
    "required": ["app", "action"]
   }
+ },
+ {
+  "name": "ocr",
+  "description": "Read text out of the CURRENT screenshot via Apple Vision — the fallback for apps whose accessibility tree is empty or unusable (Electron, canvases, games). Returns recognized lines with bounding boxes in screenshot pixels, so click x/y works on the box centers directly. Read-only: requires a capture (get_app_state first) and never invalidates element indices.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "filter": {"type": "string", "description": "case-insensitive substring: only lines whose text matches are returned"}
+   }
+  }
  }
 ]`
