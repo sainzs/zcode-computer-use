@@ -16,12 +16,12 @@ body{font-family:"Berkeley Mono Variable", "Berkeley Mono", ui-monospace, Menlo,
 .cursor.blink{animation:blink 1.1s steps(1) infinite}@keyframes blink{50%{opacity:0}}.gap{height:14px}
 </style></head><body>
 <div class="wordmark"><span class="name">zcode-computer-use</span><span class="tag">verification</span></div>
-<div class="sub">21 headless-safe protocol tests. <b>22-check live E2E</b> against TextEdit included.</div>
-<div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">protocol tests — zsh</span></div>
+<div class="sub"><b>27 Go golden tests</b> + 21 legacy protocol tests — both suites green.</div>
+<div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">test suites — zsh</span></div>
 <div class="term-body" id="body"></div></div>
 <script>
 const body=document.getElementById("body");
-const SCRIPT=[{"type":"cmd","text":"python3 tests/test_protocol.py"},{"type":"stream","lines":["test_initialize_echoes_supported_protocol ... ok","test_tools_list_covers_all_handlers ... ok","test_launch_must_be_boolean ... ok","test_boolean_element_index_is_rejected ... ok","test_paste_text_rejects_unit_separator ... ok","test_batch_request_is_32600 ... ok","  …"]},{"type":"out","text":"------------------------------------------------------------","cls":"dim"},{"type":"out","text":"Ran 21 tests in 1.090s","cls":"ok"},{"type":"out","text":"OK","cls":"ok"},{"type":"done"}];
+const SCRIPT=[{"type":"cmd","text":"cd zcode-computer-use/cuu && go test ./... -v"},{"type":"stream","lines":["--- PASS: TestInitializeEchoesSupportedProtocol (0.42s)","--- PASS: TestToolsListCoversAllHandlers (0.27s)","--- PASS: TestPing (0.43s)","--- PASS: TestBatchRequestIs32600 (0.26s)","--- PASS: TestBooleanElementIndexIsRejected (0.26s)","  …"]},{"type":"out","text":"ok  \tcuu\t7.748s","cls":"ok"},{"type":"gap"},{"type":"cmd","text":"python3 tests/_legacy/test_protocol.py"},{"type":"stream","lines":["test_initialize_echoes_supported_protocol ... ok","test_tools_list_covers_all_handlers ... ok","test_launch_must_be_boolean ... ok","  …"]},{"type":"out","text":"------------------------------------------------------------"},{"type":"out","text":"Ran 21 tests in 0.910s","cls":"ok"},{"type":"out","text":"OK","cls":"ok"},{"type":"done"}];
 const TYPE_MS=34,LINE_MS=90,AFTER_CMD=260,END_HOLD=1600;
 let cursor=null;
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
